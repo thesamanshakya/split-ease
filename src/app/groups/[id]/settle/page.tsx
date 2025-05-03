@@ -235,42 +235,60 @@ export default function SettleUpPage({ params }: { params: { id: string } }) {
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-2xl font-bold">Settle Up - {group?.name}</h1>
+    <div className="max-w-2xl mx-auto px-4 py-6">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-gray-800">{group?.name} <span className="text-gray-500 font-normal">• Settle Up</span></h1>
         <Link
           href={`/groups/${groupId}`}
-          className="text-indigo-600 hover:text-indigo-800"
+          className="text-indigo-600 hover:text-indigo-800 flex items-center gap-1 font-medium text-sm"
         >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
           Back to Group
         </Link>
       </div>
 
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-          {error}
+        <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-md mb-6 shadow-sm">
+          <div className="flex">
+            <svg className="h-5 w-5 text-red-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <span>{error}</span>
+          </div>
         </div>
       )}
 
       {successMessage && (
-        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
-          {successMessage}
+        <div className="bg-green-50 border-l-4 border-green-500 text-green-700 p-4 rounded-md mb-6 shadow-sm">
+          <div className="flex">
+            <svg className="h-5 w-5 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            <span>{successMessage}</span>
+          </div>
         </div>
       )}
 
-      <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-        <h2 className="text-xl font-semibold mb-4">Current Balances</h2>
+      <div className="bg-white rounded-2xl shadow-sm p-6 mb-6 border border-gray-100">
+        <h2 className="text-lg font-semibold mb-4 text-gray-800">Current Balances</h2>
         
-        <div className="space-y-3 mb-6">
+        <div className="space-y-2 mb-2">
           {balances.map((balance) => {
             const isCurrentUser = balance.user_id === currentUser?.id;
             return (
               <div
                 key={balance.user_id}
-                className={`py-2 ${isCurrentUser ? 'bg-indigo-50 px-3 rounded' : ''}`}
+                className={`py-3 px-4 rounded-xl ${isCurrentUser ? 'bg-indigo-50' : 'hover:bg-gray-50'} transition-colors`}
               >
                 <div className="flex justify-between items-center">
-                  <span>{findUserName(balance.user_id)}</span>
+                  <div className="flex items-center">
+                    <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center mr-3 text-indigo-700 font-medium text-sm">
+                      {findUserName(balance.user_id).charAt(0)}
+                    </div>
+                    <span className="font-medium text-gray-800">{findUserName(balance.user_id)}</span>
+                  </div>
                   <span className={`font-medium ${balance.amount > 0 ? 'text-green-600' : balance.amount < 0 ? 'text-red-600' : 'text-gray-600'}`}>
                     {formatCurrency(balance.amount)}
                   </span>
@@ -281,11 +299,11 @@ export default function SettleUpPage({ params }: { params: { id: string } }) {
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-        <h2 className="text-xl font-semibold mb-4">Suggested Payments</h2>
+      <div className="bg-white rounded-2xl shadow-sm p-6 mb-6 border border-gray-100">
+        <h2 className="text-lg font-semibold mb-4 text-gray-800">Suggested Payments</h2>
         
         {settlements.length > 0 ? (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {settlements.map((settlement, index) => {
               const fromIsCurrentUser = settlement.from === currentUser?.id;
               const toIsCurrentUser = settlement.to === currentUser?.id;
@@ -293,26 +311,31 @@ export default function SettleUpPage({ params }: { params: { id: string } }) {
               return (
                 <div 
                   key={index} 
-                  className={`border p-4 rounded-lg ${
-                    fromIsCurrentUser || toIsCurrentUser ? 'border-indigo-300 bg-indigo-50' : 'border-gray-200'
-                  }`}
+                  className={`p-4 rounded-xl ${
+                    fromIsCurrentUser || toIsCurrentUser ? 'bg-indigo-50' : 'bg-gray-50'
+                  } transition-all hover:shadow-sm`}
                 >
                   <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">
-                        {fromIsCurrentUser ? 'You' : findUserName(settlement.from)} 
-                        <span className="text-gray-600"> pays </span>
-                        {toIsCurrentUser ? 'you' : findUserName(settlement.to)}
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        {fromIsCurrentUser ? 'You owe ' + formatCurrency(settlement.amount) : ''}
-                        {toIsCurrentUser ? findUserName(settlement.from) + ' owes you ' + formatCurrency(settlement.amount) : ''}
-                        {!fromIsCurrentUser && !toIsCurrentUser ? 
-                          `${findUserName(settlement.from)} owes ${findUserName(settlement.to)} ${formatCurrency(settlement.amount)}` : ''}
-                      </p>
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-medium text-sm">
+                        {findUserName(settlement.from).charAt(0)}
+                      </div>
+                      <div className="flex flex-col">
+                        <p className="font-medium text-gray-800">
+                          {fromIsCurrentUser ? 'You' : findUserName(settlement.from)} 
+                          <span className="text-gray-500 mx-1">→</span>
+                          {toIsCurrentUser ? 'You' : findUserName(settlement.to)}
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          {fromIsCurrentUser ? 'You owe ' + formatCurrency(settlement.amount) : ''}
+                          {toIsCurrentUser ? findUserName(settlement.from) + ' owes you ' + formatCurrency(settlement.amount) : ''}
+                          {!fromIsCurrentUser && !toIsCurrentUser ? 
+                            `${findUserName(settlement.from)} owes ${findUserName(settlement.to)} ${formatCurrency(settlement.amount)}` : ''}
+                        </p>
+                      </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-lg font-medium">{formatCurrency(settlement.amount)}</p>
+                      <div className="text-lg font-semibold text-gray-800">{formatCurrency(settlement.amount)}</div>
                     </div>
                   </div>
                 </div>
@@ -320,29 +343,33 @@ export default function SettleUpPage({ params }: { params: { id: string } }) {
             })}
           </div>
         ) : (
-          <div className="text-center py-8 text-gray-500">
-            <p>No payments needed! Everyone is settled up.</p>
+          <div className="text-center py-10 px-4">
+            <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p className="mt-2 text-gray-500 font-medium">No payments needed! Everyone is settled up.</p>
           </div>
         )}
       </div>
 
       {settlements.length > 0 && (
-        <div className="flex justify-end">
-          <button
-            onClick={handleMarkAsSettled}
-            disabled={markingAsSettled}
-            className={`bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-6 rounded ${
-              markingAsSettled ? 'opacity-70 cursor-not-allowed' : ''
-            }`}
-          >
-            {markingAsSettled ? 'Processing...' : 'Mark All as Settled'}
-          </button>
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-200 shadow-sm">
+          <div className="max-w-2xl mx-auto">
+            <button
+              onClick={handleMarkAsSettled}
+              disabled={markingAsSettled}
+              className={`w-full bg-green-600 hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 text-white font-medium py-3 px-6 rounded-xl shadow-sm transition-all ${
+                markingAsSettled ? 'opacity-70 cursor-not-allowed' : ''
+              }`}
+            >
+              {markingAsSettled ? 'Processing...' : 'Mark All as Settled'}
+            </button>
+            <p className="text-center text-gray-500 text-xs mt-2">
+              Make sure all payments have been made before marking as settled.
+            </p>
+          </div>
         </div>
       )}
-      
-      <div className="mt-8 text-center text-gray-600 text-sm">
-        <p>Settling up will mark all debts as settled. Make sure all payments have been made before clicking.</p>
-      </div>
     </div>
   );
 } 

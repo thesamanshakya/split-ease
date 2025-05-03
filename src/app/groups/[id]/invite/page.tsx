@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/utils/supabase';
 import { User } from '@/types';
+import Link from 'next/link';
 
 export default function InvitePage({ params }: { params: { id: string } }) {
   const router = useRouter();
@@ -142,93 +143,131 @@ export default function InvitePage({ params }: { params: { id: string } }) {
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6">Invite People to {group?.name}</h1>
+    <div className="max-w-2xl mx-auto px-4 py-6">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-gray-800">{group?.name} <span className="text-gray-500 font-normal">• Invite</span></h1>
+        <Link
+          href={`/groups/${groupId}`}
+          className="text-indigo-600 hover:text-indigo-800 flex items-center gap-1 font-medium text-sm"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          Back to Group
+        </Link>
+      </div>
 
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-          {error}
+        <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-md mb-6 shadow-sm">
+          <div className="flex">
+            <svg className="h-5 w-5 text-red-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <span>{error}</span>
+          </div>
         </div>
       )}
 
       {success && (
-        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
-          {success}
+        <div className="bg-green-50 border-l-4 border-green-500 text-green-700 p-4 rounded-md mb-6 shadow-sm">
+          <div className="flex">
+            <svg className="h-5 w-5 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            <span>{success}</span>
+          </div>
         </div>
       )}
 
-      <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-        <form onSubmit={handleInvite}>
-          <div className="mb-4">
-            <label htmlFor="email" className="block text-gray-700 mb-2">
+      <div className="bg-white rounded-2xl shadow-sm p-6 mb-6 border border-gray-100">
+        <h2 className="text-lg font-semibold mb-4 text-gray-800">Invite by Email</h2>
+        <form onSubmit={handleInvite} className="space-y-4">
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
               Email Address
             </label>
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Enter email address"
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
+            <div className="relative rounded-xl shadow-sm">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter email address"
+                required
+                className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              />
+            </div>
           </div>
 
-          <div className="flex justify-end">
+          <div className="flex justify-end pt-2">
             <button
               type="submit"
               disabled={inviting}
-              className={`bg-indigo-600 text-white py-2 px-6 rounded-md hover:bg-indigo-700 ${
+              className={`bg-indigo-600 hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 text-white font-medium py-2.5 px-6 rounded-xl shadow-sm transition-all flex items-center gap-2 ${
                 inviting ? 'opacity-70 cursor-not-allowed' : ''
               }`}
             >
-              {inviting ? 'Inviting...' : 'Invite'}
+              {inviting ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Inviting...
+                </>
+              ) : (
+                <>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  Invite
+                </>
+              )}
             </button>
           </div>
         </form>
       </div>
 
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-xl font-semibold mb-4">Current Members</h2>
+      <div className="bg-white rounded-2xl shadow-sm p-6 border border-gray-100">
+        <h2 className="text-lg font-semibold mb-4 text-gray-800">Current Members</h2>
         
         {currentMembers.length > 0 ? (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {currentMembers.map((member) => (
-              <div key={member.id} className="flex items-center p-3 rounded-lg hover:bg-gray-50">
-                <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center mr-3">
+              <div key={member.id} className="flex items-center p-3 rounded-xl hover:bg-gray-50 transition-colors">
+                <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center mr-3 text-indigo-700 font-medium">
                   {member.avatar_url ? (
                     <img
                       src={member.avatar_url}
                       alt={member.name}
-                      className="h-10 w-10 rounded-full"
+                      className="h-10 w-10 rounded-full object-cover"
                     />
                   ) : (
-                    <span className="text-indigo-700 font-medium">
+                    <span>
                       {member.name?.charAt(0) || member.email?.charAt(0)}
                     </span>
                   )}
                 </div>
-                <div>
-                  <p className="font-medium">{member.name}</p>
-                  <p className="text-sm text-gray-600">{member.email}</p>
+                <div className="overflow-hidden">
+                  <p className="font-medium text-gray-800 truncate">{member.name}</p>
+                  <p className="text-sm text-gray-500 truncate">{member.email}</p>
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <div className="text-center py-8 text-gray-500">
-            <p>No members in this group yet.</p>
+          <div className="text-center py-10 px-4">
+            <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+            </svg>
+            <p className="mt-2 text-gray-500 font-medium">No members in this group yet.</p>
           </div>
         )}
-
-        <div className="mt-6 text-center">
-          <button
-            onClick={() => router.push(`/groups/${groupId}`)}
-            className="text-indigo-600 hover:text-indigo-800"
-          >
-            Back to Group
-          </button>
-        </div>
       </div>
     </div>
   );
