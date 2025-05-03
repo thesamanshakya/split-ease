@@ -42,31 +42,36 @@ export default function NewExpensePage({ params }: { params: { id: string } }) {
         setCurrentUser(userData);
         setPaidBy(session.user.id);
 
-        // Get group members
-        const { data: memberData, error: memberError } = await supabase
+        // Get group members - two step approach
+        const { data: groupMembersData, error: groupMembersError } = await supabase
           .from('group_members')
-          .select(`
-            user_id,
-            profiles:user_id (
-              id,
-              name,
-              email,
-              avatar_url
-            )
-          `)
+          .select('user_id')
           .eq('group_id', groupId);
 
-        if (memberError) throw memberError;
+        if (groupMembersError) throw groupMembersError;
 
-        const formattedMembers = memberData.map(item => item.profiles) as unknown as User[];
-        setMembers(formattedMembers);
+        // Get user profiles for each member
+        if (groupMembersData && groupMembersData.length > 0) {
+          const userIds = groupMembersData.map(member => member.user_id);
+          
+          const { data: profilesData, error: profilesError } = await supabase
+            .from('profiles')
+            .select('id, name, email, avatar_url')
+            .in('id', userIds);
 
-        // Initialize empty splits for all members
-        const initialSplits = formattedMembers.map(member => ({
-          userId: member.id,
-          amount: ''
-        }));
-        setSplits(initialSplits);
+          if (profilesError) throw profilesError;
+          setMembers(profilesData || []);
+          
+          // Initialize empty splits for all members
+          const initialSplits = profilesData.map(member => ({
+            userId: member.id,
+            amount: ''
+          }));
+          setSplits(initialSplits);
+        } else {
+          setMembers([]);
+          setSplits([]);
+        }
       } catch (error: any) {
         console.error('Error fetching group members:', error);
         setError(error.message || 'An error occurred while loading group members');

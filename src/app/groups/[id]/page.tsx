@@ -48,24 +48,28 @@ export default function GroupPage({ params }: { params: { id: string } }) {
         if (groupError) throw groupError;
         setGroup(groupData);
 
-        // Get group members
-        const { data: memberData, error: memberError } = await supabase
+        // Get group members - two step approach
+        const { data: groupMembersData, error: groupMembersError } = await supabase
           .from('group_members')
-          .select(`
-            user_id,
-            profiles:user_id (
-              id,
-              name,
-              email,
-              avatar_url
-            )
-          `)
+          .select('user_id')
           .eq('group_id', groupId);
 
-        if (memberError) throw memberError;
+        if (groupMembersError) throw groupMembersError;
 
-        const formattedMembers = memberData.map(item => item.profiles) as unknown as User[];
-        setMembers(formattedMembers);
+        // Get user profiles for each member
+        if (groupMembersData && groupMembersData.length > 0) {
+          const userIds = groupMembersData.map(member => member.user_id);
+          
+          const { data: profilesData, error: profilesError } = await supabase
+            .from('profiles')
+            .select('id, name, email, avatar_url')
+            .in('id', userIds);
+
+          if (profilesError) throw profilesError;
+          setMembers(profilesData || []);
+        } else {
+          setMembers([]);
+        }
 
         // Get group expenses
         const { data: expenseData, error: expenseError } = await supabase
@@ -80,24 +84,24 @@ export default function GroupPage({ params }: { params: { id: string } }) {
         // Calculate balances
         // This is a simplified calculation. In a real app, you would need to
         // calculate this based on the actual expense splits.
-        if (expenseData && formattedMembers.length > 0) {
+        if (expenseData && members.length > 0) {
           const balanceMap = new Map<string, number>();
 
           // Initialize balances for all members
-          formattedMembers.forEach(member => {
+          members.forEach(member => {
             balanceMap.set(member.id, 0);
           });
 
           // Calculate balances based on expenses
           expenseData.forEach(expense => {
             const paidBy = expense.paid_by;
-            const splitAmount = expense.amount / formattedMembers.length;
+            const splitAmount = expense.amount / members.length;
 
             // Add the full amount to the person who paid
             balanceMap.set(paidBy, (balanceMap.get(paidBy) || 0) + expense.amount);
 
             // Subtract the split amount from each member (including the payer)
-            formattedMembers.forEach(member => {
+            members.forEach(member => {
               balanceMap.set(member.id, (balanceMap.get(member.id) || 0) - splitAmount);
             });
           });
