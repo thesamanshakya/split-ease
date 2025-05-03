@@ -2,12 +2,16 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { supabase } from '@/utils/supabase';
 import { Group, User, Expense, Balance } from '@/types';
+import Image from 'next/image';
 
-export default function GroupPage({ params }: { params: { id: string } }) {
+export default function GroupPage() {
   const router = useRouter();
+  const params = useParams();
+  const groupId = params.id as string;
+
   const [group, setGroup] = useState<Group | null>(null);
   const [members, setMembers] = useState<User[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -16,7 +20,35 @@ export default function GroupPage({ params }: { params: { id: string } }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const groupId = params.id;
+  // Function to calculate balances from expenses and members
+  const calculateBalances = (members: User[], expenses: Expense[]): Balance[] => {
+    const balanceMap = new Map<string, number>();
+
+    // Initialize balances for all members
+    members.forEach(member => {
+      balanceMap.set(member.id, 0);
+    });
+
+    // Calculate balances based on expenses
+    expenses.forEach(expense => {
+      const paidBy = expense.paid_by;
+      const splitAmount = expense.amount / members.length;
+
+      // Add the full amount to the person who paid
+      balanceMap.set(paidBy, (balanceMap.get(paidBy) || 0) + expense.amount);
+
+      // Subtract the split amount from each member (including the payer)
+      members.forEach(member => {
+        balanceMap.set(member.id, (balanceMap.get(member.id) || 0) - splitAmount);
+      });
+    });
+
+    // Convert the map to an array of Balance objects
+    return Array.from(balanceMap).map(([user_id, amount]) => ({
+      user_id,
+      amount
+    }));
+  };
 
   useEffect(() => {
     const fetchGroupData = async () => {
@@ -81,39 +113,13 @@ export default function GroupPage({ params }: { params: { id: string } }) {
         if (expenseError) throw expenseError;
         setExpenses(expenseData || []);
 
-        // Calculate balances
-        // This is a simplified calculation. In a real app, you would need to
-        // calculate this based on the actual expense splits.
-        if (expenseData && members.length > 0) {
-          const balanceMap = new Map<string, number>();
-
-          // Initialize balances for all members
-          members.forEach(member => {
-            balanceMap.set(member.id, 0);
-          });
-
-          // Calculate balances based on expenses
-          expenseData.forEach(expense => {
-            const paidBy = expense.paid_by;
-            const splitAmount = expense.amount / members.length;
-
-            // Add the full amount to the person who paid
-            balanceMap.set(paidBy, (balanceMap.get(paidBy) || 0) + expense.amount);
-
-            // Subtract the split amount from each member (including the payer)
-            members.forEach(member => {
-              balanceMap.set(member.id, (balanceMap.get(member.id) || 0) - splitAmount);
-            });
-          });
-
-          // Convert the map to an array of Balance objects
-          const balanceArray: Balance[] = Array.from(balanceMap).map(([user_id, amount]) => ({
-            user_id,
-            amount
-          }));
-
-          setBalances(balanceArray);
+        // Calculate balances if we have both members and expenses
+        if (members.length > 0 && expenseData) {
+          const calculatedBalances = calculateBalances(members, expenseData);
+          setBalances(calculatedBalances);
         }
+        
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (error: any) {
         console.error('Error fetching group data:', error);
         setError(error.message || 'An error occurred while loading the group');
@@ -123,7 +129,7 @@ export default function GroupPage({ params }: { params: { id: string } }) {
     };
 
     fetchGroupData();
-  }, [groupId, router]);
+  }, [groupId, router, members]);
 
   if (loading) {
     return (
@@ -315,20 +321,20 @@ export default function GroupPage({ params }: { params: { id: string } }) {
             <div key={member.id} className="flex items-center p-3 rounded-xl hover:bg-gray-50 transition-colors">
               <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center mr-3 text-indigo-700 font-medium">
                 {member.avatar_url ? (
-                  <img
+                  <Image
                     src={member.avatar_url}
                     alt={member.name}
-                    className="h-10 w-10 rounded-full object-cover"
+                    width={40}
+                    height={40}
+                    className="rounded-full"
                   />
                 ) : (
-                  <span>
-                    {member.name.charAt(0)}
-                  </span>
+                  member.name.charAt(0)
                 )}
               </div>
-              <div className="overflow-hidden">
-                <p className="font-medium text-gray-800 truncate">{member.name}</p>
-                <p className="text-sm text-gray-500 truncate">{member.email}</p>
+              <div>
+                <div className="font-medium text-gray-800">{member.name}</div>
+                <div className="text-xs text-gray-500">{member.email}</div>
               </div>
             </div>
           ))}

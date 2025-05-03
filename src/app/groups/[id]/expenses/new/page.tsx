@@ -1,13 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { supabase } from '@/utils/supabase';
 import { User } from '@/types';
 
-export default function NewExpensePage({ params }: { params: { id: string } }) {
+export default function NewExpensePage() {
   const router = useRouter();
-  const groupId = params.id;
+  const params = useParams();
+  const groupId = params.id as string;
 
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
@@ -72,6 +73,7 @@ export default function NewExpensePage({ params }: { params: { id: string } }) {
           setMembers([]);
           setSplits([]);
         }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (error: any) {
         console.error('Error fetching group members:', error);
         setError(error.message || 'An error occurred while loading group members');
@@ -167,6 +169,7 @@ export default function NewExpensePage({ params }: { params: { id: string } }) {
 
       // Redirect back to the group page
       router.push(`/groups/${groupId}`);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       setError(error.message || 'An error occurred while creating the expense');
       setSubmitting(false);

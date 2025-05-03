@@ -1,14 +1,16 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { supabase } from '@/utils/supabase';
 import { User } from '@/types';
 import Link from 'next/link';
+import Image from 'next/image';
 
-export default function InvitePage({ params }: { params: { id: string } }) {
+export default function InvitePage() {
   const router = useRouter();
-  const groupId = params.id;
+  const params = useParams();
+  const groupId = params.id as string;
   
   const [email, setEmail] = useState('');
   const [group, setGroup] = useState<{ id: string; name: string } | null>(null);
@@ -242,30 +244,27 @@ export default function InvitePage({ params }: { params: { id: string } }) {
               <div key={member.id} className="flex items-center p-3 rounded-xl hover:bg-gray-50 transition-colors">
                 <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center mr-3 text-indigo-700 font-medium">
                   {member.avatar_url ? (
-                    <img
+                    <Image
                       src={member.avatar_url}
                       alt={member.name}
-                      className="h-10 w-10 rounded-full object-cover"
+                      width={40}
+                      height={40}
+                      className="rounded-full"
                     />
                   ) : (
-                    <span>
-                      {member.name?.charAt(0) || member.email?.charAt(0)}
-                    </span>
+                    member.name.charAt(0)
                   )}
                 </div>
-                <div className="overflow-hidden">
-                  <p className="font-medium text-gray-800 truncate">{member.name}</p>
-                  <p className="text-sm text-gray-500 truncate">{member.email}</p>
+                <div>
+                  <div className="font-medium text-gray-800">{member.name}</div>
+                  <div className="text-sm text-gray-500">{member.email}</div>
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <div className="text-center py-10 px-4">
-            <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-            </svg>
-            <p className="mt-2 text-gray-500 font-medium">No members in this group yet.</p>
+          <div className="text-center py-8 text-gray-500">
+            <p>No members yet.</p>
           </div>
         )}
       </div>

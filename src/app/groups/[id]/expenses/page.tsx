@@ -2,13 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { supabase } from '@/utils/supabase';
 import { Expense, User } from '@/types';
 
-export default function GroupExpensesPage({ params }: { params: { id: string } }) {
+export default function GroupExpensesPage() {
   const router = useRouter();
-  const groupId = params.id;
+  const params = useParams();
+  const groupId = params.id as string;
   
   const [group, setGroup] = useState<{ id: string; name: string } | null>(null);
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -69,7 +70,7 @@ export default function GroupExpensesPage({ params }: { params: { id: string } }
     };
 
     fetchGroupData();
-  }, [groupId, router]);
+  }, [groupId, router, members]);
 
   const fetchExpenses = async () => {
     try {
