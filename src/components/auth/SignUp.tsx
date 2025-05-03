@@ -47,8 +47,9 @@ export default function SignUp() {
       }
 
       setMessage('Registration successful! Please check your email to confirm your account.');
-    } catch (error: any) {
-      setError(error.message || 'An error occurred during registration');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'An error occurred during registration';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -118,8 +119,7 @@ export default function SignUp() {
         <button
           type="submit"
           disabled={loading}
-          className={`w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 ${loading ? 'opacity-70 cursor-not-allowed' : ''
-            }`}
+          className={`w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
         >
           {loading ? 'Signing up...' : 'Sign Up'}
         </button>

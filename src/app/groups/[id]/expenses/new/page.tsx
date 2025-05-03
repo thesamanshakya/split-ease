@@ -314,7 +314,7 @@ export default function NewExpensePage({ params }: { params: { id: string } }) {
               </p>
 
               <div className="space-y-3">
-                {splits.map((split, index) => {
+                {splits.map((split) => {
                   const member = members.find(m => m.id === split.userId);
                   return (
                     <div key={split.userId} className="flex items-center p-3 bg-gray-50 rounded-xl">

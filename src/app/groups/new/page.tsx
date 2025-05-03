@@ -51,8 +51,9 @@ export default function NewGroupPage() {
 
       // Redirect to the group page
       router.push(`/groups/${groupData.id}`);
-    } catch (error: any) {
-      setError(error.message || 'An error occurred while creating the group');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'An error occurred while creating the group';
+      setError(errorMessage);
       setLoading(false);
     }
   };
@@ -83,15 +84,14 @@ export default function NewGroupPage() {
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
             <p className="text-sm text-gray-500 mt-1">
-              Choose a name that describes your group's purpose
+              Choose a name that describes your group&apos;s purpose
             </p>
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className={`w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 ${loading ? 'opacity-70 cursor-not-allowed' : ''
-              }`}
+            className={`w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
           >
             {loading ? 'Creating...' : 'Create Group'}
           </button>

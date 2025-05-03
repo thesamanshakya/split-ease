@@ -22,8 +22,9 @@ export default function SignIn() {
 
       if (error) throw error;
       // Successful login will automatically redirect through middleware
-    } catch (error: any) {
-      setError(error.message || 'An error occurred during sign in');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'An error occurred during sign in';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -71,8 +72,7 @@ export default function SignIn() {
         <button
           type="submit"
           disabled={loading}
-          className={`w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 ${loading ? 'opacity-70 cursor-not-allowed' : ''
-            }`}
+          className={`w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
         >
           {loading ? 'Signing in...' : 'Sign In'}
         </button>

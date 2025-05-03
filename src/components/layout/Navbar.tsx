@@ -9,7 +9,6 @@ import { User } from '@/types';
 export default function Navbar() {
   const pathname = usePathname();
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const getUser = async () => {
@@ -27,8 +26,6 @@ export default function Navbar() {
         }
       } catch (error) {
         console.error('Error getting user:', error);
-      } finally {
-        setLoading(false);
       }
     };
 

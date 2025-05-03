@@ -98,7 +98,7 @@ export default function Dashboard() {
             </div>
           ) : (
             <div className="text-center py-8 text-gray-500">
-              <p>You haven't joined any groups yet.</p>
+              <p>You haven&apos;t joined any groups yet.</p>
             </div>
           )}
 
