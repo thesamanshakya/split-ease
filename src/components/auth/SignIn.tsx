@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { supabase } from '@/utils/supabase';
 
 export default function SignIn() {
@@ -8,6 +9,7 @@ export default function SignIn() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,6 +23,7 @@ export default function SignIn() {
       });
 
       if (error) throw error;
+      router.push('/dashboard');
       // Successful login will automatically redirect through middleware
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'An error occurred during sign in';

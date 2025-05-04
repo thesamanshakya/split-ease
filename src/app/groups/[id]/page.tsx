@@ -6,6 +6,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { supabase } from '@/utils/supabase';
 import { Group, User, Expense, Balance } from '@/types';
 import Image from 'next/image';
+import toast, { Toaster } from 'react-hot-toast';
 
 export default function GroupPage() {
   const router = useRouter();
@@ -19,6 +20,7 @@ export default function GroupPage() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isRemoving, setIsRemoving] = useState(false);
 
   // Function to calculate balances from expenses and members
   const calculateBalances = (members: User[], expenses: Expense[]): Balance[] => {
@@ -131,6 +133,32 @@ export default function GroupPage() {
     fetchGroupData();
   }, [groupId, router, members]);
 
+  const handleRemoveMember = async (userId: string) => {
+    if (!confirm(`Are you sure you want to remove this member from the group?`)) {
+      return;
+    }
+
+    setIsRemoving(true);
+    try {
+      const { error } = await supabase
+        .from('group_members')
+        .delete()
+        .eq('group_id', groupId)
+        .eq('user_id', userId);
+      
+      if (error) throw error;
+      
+      // Update the members list
+      setMembers(members.filter(member => member.id !== userId));
+      toast.success('Member removed successfully');
+    } catch (error: any) {
+      console.error('Error removing member:', error);
+      toast.error(error.message || 'Failed to remove member');
+    } finally {
+      setIsRemoving(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -169,6 +197,7 @@ export default function GroupPage() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-6">
+      <Toaster position="top-center" />
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">{group.name}</h1>
@@ -318,24 +347,38 @@ export default function GroupPage() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
           {members.map((member) => (
-            <div key={member.id} className="flex items-center p-3 rounded-xl hover:bg-gray-50 transition-colors">
-              <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center mr-3 text-indigo-700 font-medium">
-                {member.avatar_url ? (
-                  <Image
-                    src={member.avatar_url}
-                    alt={member.name}
-                    width={40}
-                    height={40}
-                    className="rounded-full"
-                  />
-                ) : (
-                  member.name.charAt(0)
-                )}
+            <div key={member.id} className="flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 transition-colors">
+              <div className="flex items-center">
+                <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center mr-3 text-indigo-700 font-medium">
+                  {member.avatar_url ? (
+                    <Image
+                      src={member.avatar_url}
+                      alt={member.name}
+                      width={40}
+                      height={40}
+                      className="rounded-full"
+                    />
+                  ) : (
+                    member.name.charAt(0)
+                  )}
+                </div>
+                <div>
+                  <div className="font-medium text-gray-800">{member.name}</div>
+                  <div className="text-xs text-gray-500">{member.email}</div>
+                </div>
               </div>
-              <div>
-                <div className="font-medium text-gray-800">{member.name}</div>
-                <div className="text-xs text-gray-500">{member.email}</div>
-              </div>
+              {currentUser?.id !== member.id && (
+                <button
+                  onClick={() => handleRemoveMember(member.id)}
+                  disabled={isRemoving}
+                  className="text-red-500 hover:text-red-700 p-1 rounded-full hover:bg-red-50"
+                  title="Remove member"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                </button>
+              )}
             </div>
           ))}
         </div>

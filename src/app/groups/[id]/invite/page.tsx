@@ -13,12 +13,15 @@ export default function InvitePage() {
   const groupId = params.id as string;
   
   const [email, setEmail] = useState('');
+  const [searchName, setSearchName] = useState('');
   const [group, setGroup] = useState<{ id: string; name: string } | null>(null);
   const [currentMembers, setCurrentMembers] = useState<User[]>([]);
+  const [availableUsers, setAvailableUsers] = useState<User[]>([]);
   const [inviting, setInviting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [searching, setSearching] = useState(false);
 
   useEffect(() => {
     const fetchGroupData = async () => {
@@ -136,6 +139,85 @@ export default function InvitePage() {
     }
   };
 
+  const searchUsers = async () => {
+    setSearching(true);
+    setError(null);
+    
+    try {
+      if (!searchName.trim()) {
+        setAvailableUsers([]);
+        setSearching(false);
+        return;
+      }
+      
+      // Get current member IDs for filtering
+      const currentMemberIds = currentMembers.map(member => member.id);
+      
+      // Search for users by name
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, name, email, avatar_url')
+        .ilike('name', `%${searchName}%`)
+        .limit(10);
+        
+      if (error) throw error;
+      
+      // Filter out users who are already members
+      const filteredUsers = data?.filter(user => !currentMemberIds.includes(user.id)) || [];
+      setAvailableUsers(filteredUsers);
+    } catch (error: any) {
+      console.error('Error searching users:', error);
+      setError(error.message || 'An error occurred while searching users');
+    } finally {
+      setSearching(false);
+    }
+  };
+  
+  const addUserToGroup = async (user: User) => {
+    setInviting(true);
+    setError(null);
+    setSuccess(null);
+    
+    try {
+      // Add user to the group
+      const { error: memberError } = await supabase
+        .from('group_members')
+        .insert({
+          group_id: groupId,
+          user_id: user.id
+        });
+
+      if (memberError) throw memberError;
+
+      setSuccess(`${user.name} has been added to the group!`);
+      
+      // Add the new member to the current members list
+      setCurrentMembers([...currentMembers, user]);
+      
+      // Remove user from available users list
+      setAvailableUsers(availableUsers.filter(u => u.id !== user.id));
+      
+      // Clear search field
+      setSearchName('');
+    } catch (error: any) {
+      console.error('Error adding member:', error);
+      setError(error.message || 'An error occurred while adding the member');
+    } finally {
+      setInviting(false);
+    }
+  };
+
+  useEffect(() => {
+    // Debounce search
+    const timer = setTimeout(() => {
+      if (searchName.trim()) {
+        searchUsers();
+      }
+    }, 300);
+    
+    return () => clearTimeout(timer);
+  }, [searchName]);
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -180,6 +262,83 @@ export default function InvitePage() {
           </div>
         </div>
       )}
+
+      <div className="bg-white rounded-2xl shadow-sm p-6 mb-6 border border-gray-100">
+        <h2 className="text-lg font-semibold mb-4 text-gray-800">Add Members by Name</h2>
+        <div className="space-y-4">
+          <div>
+            <label htmlFor="searchName" className="block text-sm font-medium text-gray-700 mb-1">
+              Search by Name
+            </label>
+            <div className="relative rounded-xl shadow-sm">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+              <input
+                id="searchName"
+                type="text"
+                value={searchName}
+                onChange={(e) => setSearchName(e.target.value)}
+                placeholder="Search users by name"
+                className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              />
+            </div>
+          </div>
+          
+          {searching && (
+            <div className="flex justify-center py-4">
+              <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-indigo-500"></div>
+            </div>
+          )}
+          
+          {!searching && availableUsers.length > 0 && (
+            <div className="rounded-xl border border-gray-200 overflow-hidden">
+              <ul className="divide-y divide-gray-200">
+                {availableUsers.map((user) => (
+                  <li key={user.id} className="flex justify-between items-center p-4 hover:bg-gray-50">
+                    <div className="flex items-center">
+                      <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center mr-3 text-indigo-700 font-medium">
+                        {user.avatar_url ? (
+                          <Image
+                            src={user.avatar_url}
+                            alt={user.name}
+                            width={40}
+                            height={40}
+                            className="rounded-full"
+                          />
+                        ) : (
+                          user.name.charAt(0)
+                        )}
+                      </div>
+                      <div>
+                        <div className="font-medium text-gray-800">{user.name}</div>
+                        <div className="text-sm text-gray-500">{user.email}</div>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => addUserToGroup(user)}
+                      className="ml-4 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 py-1.5 px-3 rounded-lg font-medium text-sm transition-colors flex items-center"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                      </svg>
+                      Add
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          
+          {!searching && searchName.trim() !== '' && availableUsers.length === 0 && (
+            <div className="text-center py-4 text-gray-500 bg-gray-50 rounded-xl">
+              <p>No users found matching &quot;{searchName}&quot;</p>
+            </div>
+          )}
+        </div>
+      </div>
 
       <div className="bg-white rounded-2xl shadow-sm p-6 mb-6 border border-gray-100">
         <h2 className="text-lg font-semibold mb-4 text-gray-800">Invite by Email</h2>
