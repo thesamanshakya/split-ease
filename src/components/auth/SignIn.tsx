@@ -21,6 +21,7 @@ export default function SignIn() {
         email,
         password,
       });
+      console.log('test.......');
 
       if (error) throw error;
       router.push('/dashboard');
@@ -34,7 +35,7 @@ export default function SignIn() {
   };
 
   return (
-    <div className="max-w-md mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6">
+    <div>
       <h2 className="text-2xl font-bold mb-6">Sign In</h2>
 
       {error && (

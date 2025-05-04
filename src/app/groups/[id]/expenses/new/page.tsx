@@ -178,15 +178,35 @@ export default function NewExpensePage() {
     if (remainingAmount <= 0) return;
     
     // Calculate per-person amount for target members
-    const perPersonAmount = (remainingAmount / autoFillTarget.length).toFixed(2);
+    const perPersonAmount = (remainingAmount / autoFillTarget.length);
+    const roundedPerPersonAmount = Math.floor(perPersonAmount * 100) / 100; // Round down to 2 decimal places
     
-    // Update splits
-    const newSplits = splits.map(split => {
+    // Calculate if we need to adjust the last person's amount to match the total
+    let newSplits = [...splits];
+    
+    // Calculate total after rounding
+    const totalAfterRounding = allocatedAmount + (roundedPerPersonAmount * autoFillTarget.length);
+    const roundingDifference = totalAmount - totalAfterRounding;
+    
+    // Apply rounded amounts to all targeted users
+    newSplits = newSplits.map(split => {
       if (split.included && autoFillTarget.includes(split.userId)) {
-        return { ...split, amount: perPersonAmount };
+        return { ...split, amount: roundedPerPersonAmount.toFixed(2) };
       }
       return split;
     });
+    
+    // If there's a rounding difference, add it to the last person
+    if (roundingDifference > 0 && autoFillTarget.length > 0) {
+      const lastTargetUserId = autoFillTarget[autoFillTarget.length - 1];
+      newSplits = newSplits.map(split => {
+        if (split.userId === lastTargetUserId) {
+          const adjustedAmount = (parseFloat(split.amount) + roundingDifference).toFixed(2);
+          return { ...split, amount: adjustedAmount };
+        }
+        return split;
+      });
+    }
     
     setSplits(newSplits);
     setAutoFillTarget([]);

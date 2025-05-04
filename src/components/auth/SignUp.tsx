@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/utils/supabase';
 import toast, { Toaster } from 'react-hot-toast';
 
@@ -12,11 +12,6 @@ export default function SignUp() {
   const [error, setError] = useState<string | null>(null);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   
-  // Debug: Make sure toast is available
-  useEffect(() => {
-    console.log('Toast library available:', typeof toast);
-    console.log('Toast notify method:', typeof toast.success);
-  }, []);
   
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,7 +20,6 @@ export default function SignUp() {
     setShowSuccessMessage(false);
 
     try {
-      console.log('Starting signup process...');
       // Sign up the user
       const { error: authError } = await supabase.auth.signUp({
         email,
@@ -74,7 +68,7 @@ export default function SignUp() {
           },
         }}
       />
-      <div className="max-w-md mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6">
+      <div>
         <h2 className="text-2xl font-bold mb-6">Sign Up</h2>
 
         {error && (
@@ -140,14 +134,6 @@ export default function SignUp() {
             className={`w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
           >
             {loading ? 'Signing up...' : 'Sign Up'}
-          </button>
-          
-          <button 
-            type="button" 
-            className="mt-4 text-sm text-indigo-600 hover:text-indigo-800"
-            onClick={() => toast.success('Test toast!')}
-          >
-            Test Toast
           </button>
         </form>
       </div>

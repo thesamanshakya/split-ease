@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/utils/supabase';
 import { User } from '@/types';
 import toast, { Toaster } from 'react-hot-toast';
@@ -11,6 +11,8 @@ export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const getUser = async () => {
@@ -66,6 +68,24 @@ export default function Navbar() {
     }
   };
 
+  const toggleDropdown = () => {
+    setDropdownOpen(!dropdownOpen);
+  };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
   return (
     <nav className="bg-indigo-600 text-white shadow-md">
       <Toaster position="top-center" toastOptions={{ duration: 3000 }} />
@@ -86,8 +106,11 @@ export default function Navbar() {
                   Dashboard
                 </Link>
                
-                <div className="relative group">
-                  <button className="flex items-center hover:text-indigo-200">
+                <div className="relative group" ref={dropdownRef}>
+                  <button 
+                    className="flex items-center hover:text-indigo-200" 
+                    onClick={toggleDropdown}
+                  >
                     <span className="mr-1">{user.name}</span>
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -104,15 +127,22 @@ export default function Navbar() {
                       />
                     </svg>
                   </button>
-                  <div className="absolute right-0 w-48 bg-white rounded-md shadow-lg py-1 z-10 hidden group-hover:block">
+                  <div 
+                    className={`absolute right-0 w-48 bg-white rounded-md shadow-lg py-1 z-10 
+                      ${dropdownOpen ? 'block' : 'hidden md:group-hover:block'}`}
+                  >
                     <Link
                       href="/profile"
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      onClick={() => setDropdownOpen(false)}
                     >
                       Your Profile
                     </Link>
                     <button
-                      onClick={handleSignOut}
+                      onClick={() => {
+                        setDropdownOpen(false);
+                        handleSignOut();
+                      }}
                       className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     >
                       Sign out

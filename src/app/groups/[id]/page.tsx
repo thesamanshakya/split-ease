@@ -183,7 +183,7 @@ export default function GroupPage() {
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'USD'
+      currency: 'INR'
     }).format(amount);
   };
 
@@ -214,8 +214,8 @@ export default function GroupPage() {
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 col-span-2">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-6">
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 col-span-3">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-lg font-semibold text-gray-800">Recent Expenses</h2>
             {expenses.length > 0 && (
@@ -265,7 +265,7 @@ export default function GroupPage() {
           )}
         </div>
 
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 col-span-2">
           <h2 className="text-lg font-semibold mb-4 text-gray-800">Balances</h2>
 
           {balances.length > 0 ? (
@@ -306,7 +306,7 @@ export default function GroupPage() {
                         <span className="font-medium text-gray-800 truncate">{findUserName(balance.user_id)}</span>
                       </div>
                       <span className={`font-medium ${balance.amount === 0 ? 'text-gray-600' : balance.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {balance.amount === 0 ? 'Settled' : formatCurrency(balance.amount)}
+                        {balance.amount === 0 ? '' : formatCurrency(balance.amount)}
                       </span>
                     </div>
                     <p className={`text-xs mt-1 pl-11 ${statusClass}`}>{statusText}</p>
