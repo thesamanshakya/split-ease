@@ -16,11 +16,12 @@ export default function NewExpensePage() {
   const [splitType, setSplitType] = useState<'equal' | 'manual'>('equal');
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [members, setMembers] = useState<User[]>([]);
-  const [splits, setSplits] = useState<{ userId: string; amount: string }[]>([]);
+  const [splits, setSplits] = useState<{ userId: string; amount: string; included: boolean }[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [autoFillTarget, setAutoFillTarget] = useState<string[]>([]);
 
   useEffect(() => {
     const fetchGroupMembers = async () => {
@@ -66,7 +67,8 @@ export default function NewExpensePage() {
           // Initialize empty splits for all members
           const initialSplits = profilesData.map(member => ({
             userId: member.id,
-            amount: ''
+            amount: '',
+            included: true
           }));
           setSplits(initialSplits);
         } else {
@@ -89,12 +91,20 @@ export default function NewExpensePage() {
     if (splitType === 'equal' && members.length > 0) {
       const numericAmount = parseFloat(newAmount || '0');
       if (!isNaN(numericAmount)) {
-        const perPersonAmount = (numericAmount / members.length).toFixed(2);
-        const newSplits = members.map(member => ({
-          userId: member.id,
-          amount: perPersonAmount
-        }));
-        setSplits(newSplits);
+        // Only count included members
+        const includedMembers = splits.filter(split => split.included);
+        const memberCount = includedMembers.length;
+        
+        if (memberCount > 0) {
+          const perPersonAmount = (numericAmount / memberCount).toFixed(2);
+          
+          const newSplits = splits.map(split => ({
+            ...split,
+            amount: split.included ? perPersonAmount : '0.00'
+          }));
+          
+          setSplits(newSplits);
+        }
       }
     }
   };
@@ -112,11 +122,82 @@ export default function NewExpensePage() {
     }
   };
 
+  const toggleMemberInclusion = (userId: string) => {
+    // Create new splits array with the toggled member
+    const newSplits = splits.map(split => 
+      split.userId === userId 
+        ? { ...split, included: !split.included } 
+        : split
+    );
+    setSplits(newSplits);
+  };
+
+  // Recalculate equal splits whenever splits, splitType, or amount changes
+  useEffect(() => {
+    if (splitType === 'equal' && members.length > 0) {
+      const numericAmount = parseFloat(amount || '0');
+      if (!isNaN(numericAmount)) {
+        const includedMembers = splits.filter(split => split.included);
+        const memberCount = includedMembers.length;
+        if (memberCount > 0) {
+          const perPersonAmount = (numericAmount / memberCount).toFixed(2);
+          const newSplits = splits.map(split => ({
+            ...split,
+            amount: split.included ? perPersonAmount : '0.00'
+          }));
+          setSplits(newSplits);
+        }
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [splits.map(s => s.included).join(','), splitType, amount, members.length]);
+
   const handleSplitAmountChange = (userId: string, splitAmount: string) => {
     const newSplits = splits.map(split =>
       split.userId === userId ? { ...split, amount: splitAmount } : split
     );
     setSplits(newSplits);
+  };
+
+  const autoFillRemainingAmount = () => {
+    if (!amount || autoFillTarget.length === 0) return;
+    
+    const totalAmount = parseFloat(amount);
+    if (isNaN(totalAmount)) return;
+    
+    // Calculate how much is already allocated
+    const allocatedAmount = splits
+      .filter(split => split.included && !autoFillTarget.includes(split.userId))
+      .reduce((sum, split) => {
+        const splitAmount = parseFloat(split.amount || '0');
+        return sum + (isNaN(splitAmount) ? 0 : splitAmount);
+      }, 0);
+    
+    // Calculate remaining amount
+    const remainingAmount = totalAmount - allocatedAmount;
+    if (remainingAmount <= 0) return;
+    
+    // Calculate per-person amount for target members
+    const perPersonAmount = (remainingAmount / autoFillTarget.length).toFixed(2);
+    
+    // Update splits
+    const newSplits = splits.map(split => {
+      if (split.included && autoFillTarget.includes(split.userId)) {
+        return { ...split, amount: perPersonAmount };
+      }
+      return split;
+    });
+    
+    setSplits(newSplits);
+    setAutoFillTarget([]);
+  };
+
+  const toggleAutoFillTarget = (userId: string) => {
+    if (autoFillTarget.includes(userId)) {
+      setAutoFillTarget(autoFillTarget.filter(id => id !== userId));
+    } else {
+      setAutoFillTarget([...autoFillTarget, userId]);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -127,7 +208,9 @@ export default function NewExpensePage() {
     try {
       // Validate the total split amount equals the expense amount
       if (splitType === 'manual') {
-        const totalSplitAmount = splits.reduce((sum, split) => sum + parseFloat(split.amount || '0'), 0);
+        const totalSplitAmount = splits
+          .filter(split => split.included)
+          .reduce((sum, split) => sum + parseFloat(split.amount || '0'), 0);
         const expenseAmount = parseFloat(amount);
 
         if (Math.abs(totalSplitAmount - expenseAmount) > 0.01) {
@@ -154,12 +237,14 @@ export default function NewExpensePage() {
 
       if (expenseError) throw expenseError;
 
-      // Create the expense splits
-      const expenseSplits = splits.map(split => ({
-        expense_id: expenseData.id,
-        user_id: split.userId,
-        amount: parseFloat(split.amount || '0')
-      }));
+      // Create the expense splits - only for included members
+      const expenseSplits = splits
+        .filter(split => split.included)
+        .map(split => ({
+          expense_id: expenseData.id,
+          user_id: split.userId,
+          amount: parseFloat(split.amount || '0')
+        }));
 
       const { error: splitsError } = await supabase
         .from('expense_splits')
@@ -316,21 +401,43 @@ export default function NewExpensePage() {
                 Specify how much each person owes. The total should equal ${amount || '0.00'}.
               </p>
 
+              {autoFillTarget.length > 0 && (
+                <div className="mb-4 flex items-center justify-between">
+                  <div className="text-sm text-gray-700">
+                    <span className="font-medium">Auto-calculate</span> for {autoFillTarget.length} selected member{autoFillTarget.length > 1 ? 's' : ''}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={autoFillRemainingAmount}
+                    className="px-3 py-1.5 bg-indigo-100 text-indigo-700 text-sm font-medium rounded-lg hover:bg-indigo-200 transition-colors"
+                  >
+                    Calculate Now
+                  </button>
+                </div>
+              )}
+
               <div className="space-y-3">
                 {splits.map((split) => {
                   const member = members.find(m => m.id === split.userId);
                   return (
-                    <div key={split.userId} className="flex items-center p-3 bg-gray-50 rounded-xl">
+                    <div key={split.userId} className={`flex items-center p-3 rounded-xl ${split.included ? 'bg-gray-50' : 'bg-gray-100 opacity-75'}`}>
                       <div className="flex items-center w-1/2">
-                        <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center mr-3 text-indigo-700 font-medium text-sm">
+                        <div 
+                          className={`h-8 w-8 rounded-full flex items-center justify-center mr-3 text-sm ${
+                            split.included 
+                              ? 'bg-indigo-100 text-indigo-700' 
+                              : 'bg-gray-200 text-gray-500'
+                          }`}
+                        >
                           {member?.name?.charAt(0) || '?'}
                         </div>
-                        <span className="font-medium text-gray-800 truncate">
+                        <span className={`font-medium truncate ${split.included ? 'text-gray-800' : 'text-gray-500'}`}>
                           {member?.name} {member?.id === currentUser?.id ? '(You)' : ''}
                         </span>
                       </div>
-                      <div className="w-1/2">
-                        <div className="relative rounded-xl shadow-sm">
+                      
+                      <div className="w-1/2 flex gap-2">
+                        <div className="relative rounded-xl shadow-sm flex-grow">
                           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                             <span className="text-gray-500">$</span>
                           </div>
@@ -340,10 +447,114 @@ export default function NewExpensePage() {
                             step="0.01"
                             value={split.amount}
                             onChange={(e) => handleSplitAmountChange(split.userId, e.target.value)}
+                            disabled={!split.included}
                             placeholder="0.00"
-                            className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                            className={`w-full pl-8 pr-3 py-2 border border-gray-300 rounded-xl ${
+                              split.included ? 'bg-white' : 'bg-gray-100'
+                            } focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500`}
                           />
                         </div>
+                        
+                        {splitType === 'manual' && (
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => toggleAutoFillTarget(split.userId)}
+                              className={`p-1.5 rounded-lg transition-colors ${
+                                autoFillTarget.includes(split.userId)
+                                  ? 'bg-indigo-100 text-indigo-600'
+                                  : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                              } ${!split.included ? 'opacity-50 cursor-not-allowed' : ''}`}
+                              disabled={!split.included}
+                              title="Select for auto-calculation"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                              </svg>
+                            </button>
+                            
+                            <button
+                              type="button"
+                              onClick={() => toggleMemberInclusion(split.userId)}
+                              className={`p-1.5 rounded-lg transition-colors ${
+                                split.included
+                                  ? 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                                  : 'bg-red-100 text-red-600'
+                              }`}
+                              title={split.included ? "Exclude member" : "Include member"}
+                            >
+                              {split.included ? (
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                              ) : (
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                </svg>
+                              )}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {splitType === 'equal' && (
+            <div className="border-t border-gray-200 pt-4">
+              <h3 className="text-base font-medium mb-2 text-gray-800">Who&apos;s participating?</h3>
+              <p className="text-sm text-gray-600 mb-4">
+                Deselect anyone who shouldn&apos;t be included in this expense.
+              </p>
+
+              <div className="space-y-3">
+                {splits.map((split) => {
+                  const member = members.find(m => m.id === split.userId);
+                  return (
+                    <div key={split.userId} className={`flex items-center justify-between p-3 rounded-xl ${split.included ? 'bg-gray-50' : 'bg-gray-100 opacity-75'}`}>
+                      <div className="flex items-center">
+                        <div 
+                          className={`h-8 w-8 rounded-full flex items-center justify-center mr-3 text-sm ${
+                            split.included 
+                              ? 'bg-indigo-100 text-indigo-700' 
+                              : 'bg-gray-200 text-gray-500'
+                          }`}
+                        >
+                          {member?.name?.charAt(0) || '?'}
+                        </div>
+                        <span className={`font-medium ${split.included ? 'text-gray-800' : 'text-gray-500'}`}>
+                          {member?.name} {member?.id === currentUser?.id ? '(You)' : ''}
+                        </span>
+                      </div>
+                      
+                      <div className="flex items-center gap-3">
+                        {split.included && (
+                          <span className="text-sm font-medium text-gray-700">${split.amount}</span>
+                        )}
+                        
+                        <button
+                          type="button"
+                          onClick={() => toggleMemberInclusion(split.userId)}
+                          className={`p-1.5 rounded-lg transition-colors ${
+                            split.included
+                              ? 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                              : 'bg-red-100 text-red-600'
+                          }`}
+                          title={split.included ? "Exclude member" : "Include member"}
+                        >
+                          {split.included ? (
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          ) : (
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                            </svg>
+                          )}
+                        </button>
                       </div>
                     </div>
                   );

@@ -75,13 +75,7 @@ export default function Navbar() {
                 >
                   Dashboard
                 </Link>
-                <Link
-                  href="/groups"
-                  className={`hover:text-indigo-200 ${pathname.startsWith('/groups') ? 'text-white font-medium' : 'text-indigo-100'
-                    }`}
-                >
-                  Groups
-                </Link>
+               
                 <div className="relative group">
                   <button className="flex items-center hover:text-indigo-200">
                     <span className="mr-1">{user.name}</span>
