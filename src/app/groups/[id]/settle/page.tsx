@@ -6,16 +6,29 @@ import Link from "next/link";
 import { supabase } from "@/utils/supabase";
 import { formatCurrency } from "@/utils/currency";
 import { User, Expense, ExpenseSplit } from "@/types";
+import toast, { Toaster } from "react-hot-toast";
 
 interface Settlement {
   from: string;
   to: string;
   amount: number;
+  isSettled?: boolean;
+  settledAt?: string;
 }
 
 interface Balance {
   user_id: string;
   amount: number;
+}
+
+interface RecordedSettlement {
+  id: string;
+  group_id: string;
+  from_user_id: string;
+  to_user_id: string;
+  amount: number;
+  settled_at: string;
+  settled_by: string;
 }
 
 export default function SettleUpPage() {
@@ -30,11 +43,12 @@ export default function SettleUpPage() {
   const [, setExpenseSplits] = useState<ExpenseSplit[]>([]);
   const [balances, setBalances] = useState<Balance[]>([]);
   const [settlements, setSettlements] = useState<Settlement[]>([]);
+  const [, setRecordedSettlements] = useState<RecordedSettlement[]>([]);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [markingAsSettled, setMarkingAsSettled] = useState(false);
+  const [settlingTransaction, setSettlingTransaction] = useState(false);
 
   useEffect(() => {
     const fetchGroupData = async () => {
@@ -111,6 +125,20 @@ export default function SettleUpPage() {
             setExpenseSplits(allExpenseSplits);
           }
 
+          // Get recorded settlements
+          const { data: settlementsData, error: settlementsError } =
+            await supabase
+              .from("settlements")
+              .select("*")
+              .eq("group_id", groupId);
+
+          if (settlementsError) {
+            // If the table doesn't exist yet, this will fail silently
+            console.error("Error fetching settlements:", settlementsError);
+          } else {
+            setRecordedSettlements(settlementsData || []);
+          }
+
           // Calculate balances
           if (expenseData && profilesData.length > 0) {
             // Use the new calculateBalances function
@@ -124,7 +152,38 @@ export default function SettleUpPage() {
 
             // Calculate optimal settlements
             const settlements = calculateSettlements(balanceArray);
-            setSettlements(settlements);
+
+            // Mark settlements as settled if they've been recorded
+            if (settlementsData && settlementsData.length > 0) {
+              const updatedSettlements = settlements.map((settlement) => {
+                const isSettled = settlementsData.some(
+                  (s) =>
+                    s.from_user_id === settlement.from &&
+                    s.to_user_id === settlement.to &&
+                    Math.abs(s.amount - settlement.amount) < 0.01
+                );
+
+                if (isSettled) {
+                  const matchedSettlement = settlementsData.find(
+                    (s) =>
+                      s.from_user_id === settlement.from &&
+                      s.to_user_id === settlement.to
+                  );
+
+                  return {
+                    ...settlement,
+                    isSettled: true,
+                    settledAt: matchedSettlement?.settled_at,
+                  };
+                }
+
+                return settlement;
+              });
+
+              setSettlements(updatedSettlements);
+            } else {
+              setSettlements(settlements);
+            }
           }
         }
       } catch (error) {
@@ -253,23 +312,95 @@ export default function SettleUpPage() {
     return member ? member.name : "Unknown User";
   };
 
-  const handleMarkAsSettled = async () => {
-    setMarkingAsSettled(true);
+  const handleSettleTransaction = async (settlement: Settlement) => {
+    if (!currentUser || !group) return;
+
+    // Only the person who owes money (from) can settle
+    if (settlement.from !== currentUser.id) {
+      toast.error(
+        "Only the person who owes money can mark a transaction as settled"
+      );
+      return;
+    }
+
+    // Don't allow settling if it's already settled
+    if (settlement.isSettled) {
+      toast.error("This transaction is already settled");
+      return;
+    }
+
+    // Show confirmation dialog
+    const isConfirmed = window.confirm(
+      `I confirm that I have sent ${formatCurrency(
+        settlement.amount
+      )} to ${findUserName(settlement.to)}.`
+    );
+
+    if (!isConfirmed) {
+      return; // User canceled the confirmation
+    }
+
+    setSettlingTransaction(true);
     setError(null);
     setSuccessMessage(null);
 
     try {
-      // Implementation details remain the same
-      setSuccessMessage("All debts have been marked as settled!");
+      // Record the settlement in the database
+      const { error: settlementError } = await supabase
+        .from("settlements")
+        .insert([
+          {
+            group_id: groupId,
+            from_user_id: settlement.from,
+            to_user_id: settlement.to,
+            amount: settlement.amount,
+            settled_by: currentUser.id,
+          },
+        ]);
+
+      if (settlementError) throw settlementError;
+
+      // Update the UI to show the settlement as settled
+      const updatedSettlements = settlements.map((s) => {
+        if (
+          s.from === settlement.from &&
+          s.to === settlement.to &&
+          Math.abs(s.amount - settlement.amount) < 0.01
+        ) {
+          return {
+            ...s,
+            isSettled: true,
+            settledAt: new Date().toISOString(),
+          };
+        }
+        return s;
+      });
+
+      setSettlements(updatedSettlements);
+
+      // Show success message
+      toast.success(
+        `You have settled your debt of ${formatCurrency(
+          settlement.amount
+        )} to ${findUserName(settlement.to)}`
+      );
+
+      // Refresh the settlements data
+      const { data: settlementsData } = await supabase
+        .from("settlements")
+        .select("*")
+        .eq("group_id", groupId);
+
+      setRecordedSettlements(settlementsData || []);
     } catch (error) {
-      console.error("Error settling up:", error);
-      setError(
+      console.error("Error settling transaction:", error);
+      toast.error(
         error instanceof Error
           ? error.message
-          : "An error occurred while settling up"
+          : "An error occurred while settling the transaction"
       );
     } finally {
-      setMarkingAsSettled(false);
+      setSettlingTransaction(false);
     }
   };
 
@@ -283,6 +414,9 @@ export default function SettleUpPage() {
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6">
+      {/* Toast notifications */}
+      <Toaster position="top-center" />
+
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-800">
           {group?.name}{" "}
@@ -410,12 +544,15 @@ export default function SettleUpPage() {
             {settlements.map((settlement, index) => {
               const fromIsCurrentUser = settlement.from === currentUser?.id;
               const toIsCurrentUser = settlement.to === currentUser?.id;
+              const canSettle = fromIsCurrentUser && !settlement.isSettled;
 
               return (
                 <div
                   key={index}
                   className={`p-4 rounded-xl ${
-                    fromIsCurrentUser || toIsCurrentUser
+                    settlement.isSettled
+                      ? "bg-green-50"
+                      : fromIsCurrentUser || toIsCurrentUser
                       ? "bg-indigo-50"
                       : "bg-gray-50"
                   } transition-all hover:shadow-sm`}
@@ -456,12 +593,45 @@ export default function SettleUpPage() {
                               )} to ${findUserName(settlement.to)}`
                             : ""}
                         </p>
+
+                        {settlement.isSettled && (
+                          <p className="text-xs text-green-600 mt-1 flex items-center">
+                            <svg
+                              className="h-3 w-3 mr-1"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M5 13l4 4L19 7"
+                              />
+                            </svg>
+                            Settled{" "}
+                            {settlement.settledAt &&
+                              new Date(
+                                settlement.settledAt
+                              ).toLocaleDateString()}
+                          </p>
+                        )}
                       </div>
                     </div>
-                    <div className="text-right">
+                    <div className="flex flex-col items-end">
                       <div className="text-lg font-semibold text-gray-800">
                         {formatCurrency(settlement.amount)}
                       </div>
+
+                      {canSettle && (
+                        <button
+                          onClick={() => handleSettleTransaction(settlement)}
+                          disabled={settlingTransaction}
+                          className="mt-2 text-sm bg-green-600 hover:bg-green-700 text-white py-1 px-3 rounded-lg transition-colors"
+                        >
+                          {settlingTransaction ? "Processing..." : "Settle"}
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -489,25 +659,6 @@ export default function SettleUpPage() {
           </div>
         )}
       </div>
-
-      {settlements.length > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-200 shadow-sm">
-          <div className="max-w-2xl mx-auto">
-            <button
-              onClick={handleMarkAsSettled}
-              disabled={markingAsSettled}
-              className={`w-full bg-green-600 hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 text-white font-medium py-3 px-6 rounded-xl shadow-sm transition-all ${
-                markingAsSettled ? "opacity-70 cursor-not-allowed" : ""
-              }`}
-            >
-              {markingAsSettled ? "Processing..." : "Mark All as Settled"}
-            </button>
-            <p className="text-center text-gray-500 text-xs mt-2">
-              Make sure all payments have been made before marking as settled.
-            </p>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

@@ -9,6 +9,16 @@ import { Group, User, Expense, Balance, ExpenseSplit } from "@/types";
 import Image from "next/image";
 import toast, { Toaster } from "react-hot-toast";
 
+interface Settlement {
+  id: string;
+  group_id: string;
+  from_user_id: string;
+  to_user_id: string;
+  amount: number;
+  settled_at: string;
+  settled_by: string;
+}
+
 export default function GroupPage() {
   const router = useRouter();
   const params = useParams();
@@ -24,12 +34,14 @@ export default function GroupPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isRemoving, setIsRemoving] = useState(false);
+  const [, setSettlements] = useState<Settlement[]>([]);
 
-  // Function to calculate balances from expenses, members, and expense splits
+  // Function to calculate balances from expenses, members, expense splits, and settlements
   const calculateBalances = (
     members: User[],
     expenses: Expense[],
-    expenseSplits: ExpenseSplit[]
+    expenseSplits: ExpenseSplit[],
+    settlements: Settlement[] = []
   ): Balance[] => {
     const balanceMap = new Map<string, number>();
 
@@ -71,6 +83,21 @@ export default function GroupPage() {
           );
         });
       }
+    });
+
+    // Apply settlements to the balances
+    settlements.forEach((settlement) => {
+      // The person who paid (from_user_id) gets a credit
+      balanceMap.set(
+        settlement.from_user_id,
+        (balanceMap.get(settlement.from_user_id) || 0) + settlement.amount
+      );
+
+      // The person who received (to_user_id) gets a debit
+      balanceMap.set(
+        settlement.to_user_id,
+        (balanceMap.get(settlement.to_user_id) || 0) - settlement.amount
+      );
     });
 
     // Convert the map to an array of Balance objects
@@ -161,12 +188,27 @@ export default function GroupPage() {
           setExpenseSplits(allExpenseSplits);
         }
 
+        // Get recorded settlements
+        const { data: settlementsData, error: settlementsError } =
+          await supabase
+            .from("settlements")
+            .select("*")
+            .eq("group_id", groupId);
+
+        if (settlementsError) {
+          // If the table doesn't exist yet, this will fail silently
+          console.error("Error fetching settlements:", settlementsError);
+        } else {
+          setSettlements(settlementsData || []);
+        }
+
         // Calculate balances if we have both members and expenses
         if (members.length > 0 && expenseData) {
           const calculatedBalances = calculateBalances(
             members,
             expenseData,
-            allExpenseSplits
+            allExpenseSplits,
+            settlementsData || []
           );
           setBalances(calculatedBalances);
         }
@@ -366,32 +408,6 @@ export default function GroupPage() {
             <div className="space-y-2">
               {balances.map((balance) => {
                 const isCurrentUser = balance.user_id === currentUser?.id;
-                const formattedAmount = formatCurrency(
-                  Math.abs(balance.amount)
-                );
-                let statusText = "";
-                let statusClass = "";
-
-                if (balance.amount > 0) {
-                  statusText = isCurrentUser
-                    ? `You have to receive ${formattedAmount}`
-                    : `${findUserName(
-                        balance.user_id
-                      )} has to receive ${formattedAmount}`;
-                  statusClass = "text-green-600";
-                } else if (balance.amount < 0) {
-                  statusText = isCurrentUser
-                    ? `You have to pay ${formattedAmount}`
-                    : `${findUserName(
-                        balance.user_id
-                      )} has to pay ${formattedAmount}`;
-                  statusClass = "text-red-600";
-                } else {
-                  statusText = isCurrentUser
-                    ? `You are settled up`
-                    : `${findUserName(balance.user_id)} is settled up`;
-                  statusClass = "text-gray-600";
-                }
 
                 return (
                   <div
@@ -400,7 +416,7 @@ export default function GroupPage() {
                       isCurrentUser ? "bg-indigo-50" : "hover:bg-gray-50"
                     } transition-colors`}
                   >
-                    <div className="flex justify-between items-center">
+                    <div className="flex justify-between items-start">
                       <div className="flex items-center">
                         <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center mr-3 text-indigo-700 font-medium text-sm">
                           {findUserName(balance.user_id).charAt(0)}
@@ -409,8 +425,8 @@ export default function GroupPage() {
                           {findUserName(balance.user_id)}
                         </span>
                       </div>
-                      <span
-                        className={`font-medium ${
+                      <div
+                        className={`font-medium text-right ml-2 ${
                           balance.amount === 0
                             ? "text-gray-600"
                             : balance.amount > 0
@@ -418,14 +434,23 @@ export default function GroupPage() {
                             : "text-red-600"
                         }`}
                       >
-                        {balance.amount === 0
-                          ? ""
-                          : formatCurrency(balance.amount)}
-                      </span>
+                        {balance.amount === 0 ? (
+                          "All settled"
+                        ) : balance.amount > 0 ? (
+                          <>
+                            Has to receive
+                            <br />
+                            {formatCurrency(balance.amount)}
+                          </>
+                        ) : (
+                          <>
+                            Has to pay
+                            <br />
+                            {formatCurrency(Math.abs(balance.amount))}
+                          </>
+                        )}
+                      </div>
                     </div>
-                    <p className={`text-xs mt-1 pl-11 ${statusClass}`}>
-                      {statusText}
-                    </p>
                   </div>
                 );
               })}
