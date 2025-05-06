@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { supabase } from '@/utils/supabase';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { supabase } from "@/utils/supabase";
 
 export default function SignIn() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
@@ -21,13 +21,15 @@ export default function SignIn() {
         email,
         password,
       });
-      console.log('test.......');
 
       if (error) throw error;
-      router.push('/dashboard');
+      router.push("/dashboard");
       // Successful login will automatically redirect through middleware
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'An error occurred during sign in';
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "An error occurred during sign in";
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -76,11 +78,13 @@ export default function SignIn() {
         <button
           type="submit"
           disabled={loading}
-          className={`w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
+          className={`w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 ${
+            loading ? "opacity-70 cursor-not-allowed" : ""
+          }`}
         >
-          {loading ? 'Signing in...' : 'Sign In'}
+          {loading ? "Signing in..." : "Sign In"}
         </button>
       </form>
     </div>
   );
-} 
+}
