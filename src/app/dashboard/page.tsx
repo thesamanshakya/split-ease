@@ -4,7 +4,15 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/utils/supabase";
 import { formatCurrency } from "@/utils/currency";
-import { Group, User, Expense, Settlement, Activity } from "@/types";
+import {
+  Group,
+  User,
+  Expense,
+  Settlement,
+  Activity,
+  ExpenseSplit,
+  Balance,
+} from "@/types";
 
 export default function Dashboard() {
   const [user, setUser] = useState<User | null>(null);
@@ -12,6 +20,83 @@ export default function Dashboard() {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
   const [allUsers, setAllUsers] = useState<Record<string, User>>({});
+  const [, setAllExpenses] = useState<Expense[]>([]);
+  const [, setAllExpenseSplits] = useState<ExpenseSplit[]>([]);
+  const [, setAllSettlements] = useState<Settlement[]>([]);
+  const [aggregatedBalances, setAggregatedBalances] = useState<Balance[]>([]);
+  const [totalToPay, setTotalToPay] = useState<number>(0);
+  const [totalToReceive, setTotalToReceive] = useState<number>(0);
+
+  // Function to calculate balances from expenses, members, expense splits, and settlements
+  const calculateAggregatedBalances = (
+    members: User[],
+    expenses: Expense[],
+    expenseSplits: ExpenseSplit[],
+    settlements: Settlement[] = []
+  ): Balance[] => {
+    const balanceMap = new Map<string, number>();
+
+    // Initialize balances for all members
+    members.forEach((member) => {
+      balanceMap.set(member.id, 0);
+    });
+
+    // Calculate balances based on expenses
+    expenses.forEach((expense) => {
+      const paidBy = expense.paid_by;
+
+      // Add the full amount to the person who paid
+      balanceMap.set(paidBy, (balanceMap.get(paidBy) || 0) + expense.amount);
+
+      if (expense.split_type === "equal") {
+        // For equal splits, calculate the split amount based on member count
+        const includedMembers = members.length;
+        const splitAmount = expense.amount / includedMembers;
+
+        // Subtract the split amount from each member (including the payer)
+        members.forEach((member) => {
+          balanceMap.set(
+            member.id,
+            (balanceMap.get(member.id) || 0) - splitAmount
+          );
+        });
+      } else if (expense.split_type === "manual") {
+        // For manual splits, use the actual split amounts from expense_splits
+        const expenseSplitsForThisExpense = expenseSplits.filter(
+          (split) => split.expense_id === expense.id
+        );
+
+        // Subtract each person's split amount
+        expenseSplitsForThisExpense.forEach((split) => {
+          balanceMap.set(
+            split.user_id,
+            (balanceMap.get(split.user_id) || 0) - split.amount
+          );
+        });
+      }
+    });
+
+    // Apply settlements to the balances
+    settlements.forEach((settlement) => {
+      // The person who paid (from_user_id) gets a credit
+      balanceMap.set(
+        settlement.from_user_id,
+        (balanceMap.get(settlement.from_user_id) || 0) + settlement.amount
+      );
+
+      // The person who received (to_user_id) gets a debit
+      balanceMap.set(
+        settlement.to_user_id,
+        (balanceMap.get(settlement.to_user_id) || 0) - settlement.amount
+      );
+    });
+
+    // Convert the map to an array of Balance objects
+    return Array.from(balanceMap).map(([user_id, amount]) => ({
+      user_id,
+      amount,
+    }));
+  };
 
   useEffect(() => {
     const fetchUserAndGroups = async () => {
@@ -73,8 +158,9 @@ export default function Dashboard() {
                 )
                 .in("group_id", groupIds);
 
+              // Create a map of all users
+              const usersMap: Record<string, User> = {};
               if (groupMembersData) {
-                const usersMap: Record<string, User> = {};
                 groupMembersData.forEach((member) => {
                   if (member.profiles) {
                     const profile = member.profiles as any;
@@ -89,7 +175,77 @@ export default function Dashboard() {
                 setAllUsers(usersMap);
               }
 
-              // Get recent expenses from all user's groups
+              // Get all expenses from all user's groups (not just recent ones)
+              const { data: allExpensesData } = await supabase
+                .from("expenses")
+                .select("*")
+                .in("group_id", groupIds);
+
+              // Get all expense splits for all expenses
+              let allExpenseSplitsData: ExpenseSplit[] = [];
+              if (allExpensesData && allExpensesData.length > 0) {
+                const expenseIds = allExpensesData.map((expense) => expense.id);
+
+                const { data: splitData } = await supabase
+                  .from("expense_splits")
+                  .select("*")
+                  .in("expense_id", expenseIds);
+
+                if (splitData) {
+                  allExpenseSplitsData = splitData;
+                }
+              }
+
+              // Get all settlements from all user's groups
+              const { data: allSettlementsData } = await supabase
+                .from("settlements")
+                .select("*")
+                .in("group_id", groupIds);
+
+              // Store all data
+              setAllExpenses(allExpensesData || []);
+              setAllExpenseSplits(allExpenseSplitsData || []);
+              setAllSettlements(allSettlementsData || []);
+
+              // Calculate aggregated balances
+              if (allExpensesData && Object.keys(usersMap).length > 0) {
+                const members = Object.values(usersMap);
+                const balances = calculateAggregatedBalances(
+                  members,
+                  allExpensesData,
+                  allExpenseSplitsData,
+                  allSettlementsData || []
+                );
+                setAggregatedBalances(balances);
+
+                // Find the current user's balance
+                const currentUserBalance = balances.find(
+                  (b) => b.user_id === session.user.id
+                );
+
+                if (currentUserBalance) {
+                  // If current user has positive balance, they should receive money
+                  if (currentUserBalance.amount > 0) {
+                    setTotalToReceive(currentUserBalance.amount);
+                    setTotalToPay(0);
+                  }
+                  // If current user has negative balance, they should pay money
+                  else if (currentUserBalance.amount < 0) {
+                    setTotalToPay(Math.abs(currentUserBalance.amount));
+                    setTotalToReceive(0);
+                  }
+                  // If current user has zero balance, they don't need to pay or receive
+                  else {
+                    setTotalToPay(0);
+                    setTotalToReceive(0);
+                  }
+                } else {
+                  setTotalToPay(0);
+                  setTotalToReceive(0);
+                }
+              }
+
+              // Get recent expenses for activity feed
               const { data: expensesData } = await supabase
                 .from("expenses")
                 .select("*")
@@ -97,7 +253,7 @@ export default function Dashboard() {
                 .order("created_at", { ascending: false })
                 .limit(5);
 
-              // Get recent settlements from all user's groups
+              // Get recent settlements for activity feed
               const { data: settlementsData } = await supabase
                 .from("settlements")
                 .select("*")
@@ -363,6 +519,170 @@ export default function Dashboard() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Payment Summary Section */}
+      <div className="bg-white p-6 rounded-lg shadow-md mb-8">
+        <h2 className="text-xl font-semibold mb-4 flex items-center">
+          <svg
+            className="h-5 w-5 mr-2 text-indigo-600"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2z"
+            />
+          </svg>
+          Payment Summary
+        </h2>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div
+            className={`p-4 rounded-lg ${
+              totalToPay > 0 ? "bg-red-50" : "bg-gray-50"
+            }`}
+          >
+            <div className="flex justify-between items-center">
+              <div>
+                <p className="text-sm text-gray-500">Total to Pay</p>
+                <p
+                  className={`text-xl font-semibold ${
+                    totalToPay > 0 ? "text-red-600" : "text-gray-600"
+                  }`}
+                >
+                  {totalToPay > 0
+                    ? formatCurrency(totalToPay)
+                    : "No payments due"}
+                </p>
+              </div>
+              <div
+                className={`h-10 w-10 rounded-full ${
+                  totalToPay > 0
+                    ? "bg-red-100 text-red-600"
+                    : "bg-gray-100 text-gray-400"
+                } flex items-center justify-center`}
+              >
+                <svg
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                  />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                  />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <div
+            className={`p-4 rounded-lg ${
+              totalToReceive > 0 ? "bg-green-50" : "bg-gray-50"
+            }`}
+          >
+            <div className="flex justify-between items-center">
+              <div>
+                <p className="text-sm text-gray-500">Total to Receive</p>
+                <p
+                  className={`text-xl font-semibold ${
+                    totalToReceive > 0 ? "text-green-600" : "text-gray-600"
+                  }`}
+                >
+                  {totalToReceive > 0
+                    ? formatCurrency(totalToReceive)
+                    : "No payments to receive"}
+                </p>
+              </div>
+              <div
+                className={`h-10 w-10 rounded-full ${
+                  totalToReceive > 0
+                    ? "bg-green-100 text-green-600"
+                    : "bg-gray-100 text-gray-400"
+                } flex items-center justify-center`}
+              >
+                <svg
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {aggregatedBalances.length > 0 && (
+          <div>
+            <h3 className="text-lg font-medium mb-3">Payment Details</h3>
+            <div className="space-y-2 max-h-60 overflow-y-auto">
+              {aggregatedBalances
+                .filter(
+                  (balance) =>
+                    balance.user_id !== user?.id && balance.amount !== 0
+                )
+                .map((balance) => {
+                  const isPositive = balance.amount > 0;
+                  return (
+                    <div
+                      key={balance.user_id}
+                      className={`p-3 rounded-lg ${
+                        isPositive ? "bg-green-50" : "bg-red-50"
+                      }`}
+                    >
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center">
+                          <div
+                            className={`h-8 w-8 rounded-full ${
+                              isPositive
+                                ? "bg-green-100 text-green-700"
+                                : "bg-red-100 text-red-700"
+                            } flex items-center justify-center mr-3 font-medium text-sm`}
+                          >
+                            {findUserName(balance.user_id).charAt(0)}
+                          </div>
+                          <span className="font-medium">
+                            {findUserName(balance.user_id)}
+                          </span>
+                        </div>
+                        <div
+                          className={`font-medium ${
+                            isPositive ? "text-green-600" : "text-red-600"
+                          }`}
+                        >
+                          {isPositive
+                            ? `Has to receive ${formatCurrency(balance.amount)}`
+                            : `Has to pay ${formatCurrency(
+                                Math.abs(balance.amount)
+                              )}`}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="bg-indigo-50 p-6 rounded-lg">
