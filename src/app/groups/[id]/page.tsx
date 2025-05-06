@@ -17,7 +17,8 @@ export default function GroupPage() {
   const [group, setGroup] = useState<Group | null>(null);
   const [members, setMembers] = useState<User[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [expenseSplits, setExpenseSplits] = useState<ExpenseSplit[]>([]);
+  // We still need setExpenseSplits for the useEffect
+  const [, setExpenseSplits] = useState<ExpenseSplit[]>([]);
   const [balances, setBalances] = useState<Balance[]>([]);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -169,11 +170,13 @@ export default function GroupPage() {
           );
           setBalances(calculatedBalances);
         }
-
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } catch (error: any) {
+      } catch (error) {
         console.error("Error fetching group data:", error);
-        setError(error.message || "An error occurred while loading the group");
+        setError(
+          error instanceof Error
+            ? error.message
+            : "An error occurred while loading the group"
+        );
       } finally {
         setLoading(false);
       }
@@ -202,9 +205,11 @@ export default function GroupPage() {
       // Update the members list
       setMembers(members.filter((member) => member.id !== userId));
       toast.success("Member removed successfully");
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error removing member:", error);
-      toast.error(error.message || "Failed to remove member");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to remove member"
+      );
     } finally {
       setIsRemoving(false);
     }

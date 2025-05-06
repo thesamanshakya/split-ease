@@ -25,8 +25,9 @@ export default function SettleUpPage() {
 
   const [group, setGroup] = useState<{ id: string; name: string } | null>(null);
   const [members, setMembers] = useState<User[]>([]);
-  const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [expenseSplits, setExpenseSplits] = useState<ExpenseSplit[]>([]);
+  // We still need setExpenses and setExpenseSplits for the useEffect
+  const [, setExpenses] = useState<Expense[]>([]);
+  const [, setExpenseSplits] = useState<ExpenseSplit[]>([]);
   const [balances, setBalances] = useState<Balance[]>([]);
   const [settlements, setSettlements] = useState<Settlement[]>([]);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -126,10 +127,13 @@ export default function SettleUpPage() {
             setSettlements(settlements);
           }
         }
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } catch (error: any) {
+      } catch (error) {
         console.error("Error fetching group data:", error);
-        setError(error.message || "An error occurred while loading the group");
+        setError(
+          error instanceof Error
+            ? error.message
+            : "An error occurred while loading the group"
+        );
       } finally {
         setLoading(false);
       }
@@ -257,11 +261,13 @@ export default function SettleUpPage() {
     try {
       // Implementation details remain the same
       setSuccessMessage("All debts have been marked as settled!");
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error settling up:", error);
-      setError(error.message || "An error occurred while settling up");
+      setError(
+        error instanceof Error
+          ? error.message
+          : "An error occurred while settling up"
+      );
     } finally {
       setMarkingAsSettled(false);
     }
