@@ -245,7 +245,7 @@ export default function GroupPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-6">
+    <div className="max-w-4xl mx-auto">
       <Toaster position="top-center" />
       <div className="flex justify-between items-center mb-6">
         <div>
@@ -374,17 +374,17 @@ export default function GroupPage() {
 
                 if (balance.amount > 0) {
                   statusText = isCurrentUser
-                    ? `You are owed ${formattedAmount}`
+                    ? `You have to receive ${formattedAmount}`
                     : `${findUserName(
                         balance.user_id
-                      )} is owed ${formattedAmount}`;
+                      )} has to receive ${formattedAmount}`;
                   statusClass = "text-green-600";
                 } else if (balance.amount < 0) {
                   statusText = isCurrentUser
-                    ? `You owe ${formattedAmount}`
+                    ? `You have to pay ${formattedAmount}`
                     : `${findUserName(
                         balance.user_id
-                      )} owes ${formattedAmount}`;
+                      )} has to pay ${formattedAmount}`;
                   statusClass = "text-red-600";
                 } else {
                   statusText = isCurrentUser

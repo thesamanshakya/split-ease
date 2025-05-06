@@ -354,7 +354,7 @@ export default function SettleUpPage() {
 
       <div className="bg-white rounded-2xl shadow-sm p-6 mb-6 border border-gray-100">
         <h2 className="text-lg font-semibold mb-4 text-gray-800">
-          Current Balances
+          Current Balances (Who Pays/Receives)
         </h2>
 
         <div className="space-y-2 mb-2">
@@ -385,7 +385,13 @@ export default function SettleUpPage() {
                         : "text-gray-600"
                     }`}
                   >
-                    {formatCurrency(balance.amount)}
+                    {balance.amount === 0
+                      ? "All settled"
+                      : balance.amount > 0
+                      ? `Has to receive ${formatCurrency(balance.amount)}`
+                      : `Has to pay ${formatCurrency(
+                          Math.abs(balance.amount)
+                        )}`}
                   </span>
                 </div>
               </div>
@@ -396,7 +402,7 @@ export default function SettleUpPage() {
 
       <div className="bg-white rounded-2xl shadow-sm p-6 mb-6 border border-gray-100">
         <h2 className="text-lg font-semibold mb-4 text-gray-800">
-          Suggested Payments
+          Suggested Payments (Who Pays To Whom)
         </h2>
 
         {settlements.length > 0 ? (
@@ -431,19 +437,23 @@ export default function SettleUpPage() {
                         </p>
                         <p className="text-sm text-gray-500">
                           {fromIsCurrentUser
-                            ? "You owe " + formatCurrency(settlement.amount)
+                            ? `You have to pay ${formatCurrency(
+                                settlement.amount
+                              )} to ${findUserName(settlement.to)}`
                             : ""}
                           {toIsCurrentUser
-                            ? findUserName(settlement.from) +
-                              " owes you " +
-                              formatCurrency(settlement.amount)
+                            ? `${findUserName(
+                                settlement.from
+                              )} has to pay ${formatCurrency(
+                                settlement.amount
+                              )} to you`
                             : ""}
                           {!fromIsCurrentUser && !toIsCurrentUser
                             ? `${findUserName(
                                 settlement.from
-                              )} owes ${findUserName(
-                                settlement.to
-                              )} ${formatCurrency(settlement.amount)}`
+                              )} has to pay ${formatCurrency(
+                                settlement.amount
+                              )} to ${findUserName(settlement.to)}`
                             : ""}
                         </p>
                       </div>
