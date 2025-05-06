@@ -1,12 +1,13 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { useRouter, useParams } from 'next/navigation';
-import { supabase } from '@/utils/supabase';
-import { Group, User, Expense, Balance } from '@/types';
-import Image from 'next/image';
-import toast, { Toaster } from 'react-hot-toast';
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter, useParams } from "next/navigation";
+import { supabase } from "@/utils/supabase";
+import { formatCurrency } from "@/utils/currency";
+import { Group, User, Expense, Balance } from "@/types";
+import Image from "next/image";
+import toast, { Toaster } from "react-hot-toast";
 
 export default function GroupPage() {
   const router = useRouter();
@@ -23,16 +24,19 @@ export default function GroupPage() {
   const [isRemoving, setIsRemoving] = useState(false);
 
   // Function to calculate balances from expenses and members
-  const calculateBalances = (members: User[], expenses: Expense[]): Balance[] => {
+  const calculateBalances = (
+    members: User[],
+    expenses: Expense[]
+  ): Balance[] => {
     const balanceMap = new Map<string, number>();
 
     // Initialize balances for all members
-    members.forEach(member => {
+    members.forEach((member) => {
       balanceMap.set(member.id, 0);
     });
 
     // Calculate balances based on expenses
-    expenses.forEach(expense => {
+    expenses.forEach((expense) => {
       const paidBy = expense.paid_by;
       const splitAmount = expense.amount / members.length;
 
@@ -40,15 +44,18 @@ export default function GroupPage() {
       balanceMap.set(paidBy, (balanceMap.get(paidBy) || 0) + expense.amount);
 
       // Subtract the split amount from each member (including the payer)
-      members.forEach(member => {
-        balanceMap.set(member.id, (balanceMap.get(member.id) || 0) - splitAmount);
+      members.forEach((member) => {
+        balanceMap.set(
+          member.id,
+          (balanceMap.get(member.id) || 0) - splitAmount
+        );
       });
     });
 
     // Convert the map to an array of Balance objects
     return Array.from(balanceMap).map(([user_id, amount]) => ({
       user_id,
-      amount
+      amount,
     }));
   };
 
@@ -56,48 +63,51 @@ export default function GroupPage() {
     const fetchGroupData = async () => {
       try {
         // Get current user
-        const { data: { session } } = await supabase.auth.getSession();
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
 
         if (!session?.user?.id) {
-          router.push('/auth');
+          router.push("/auth");
           return;
         }
 
         // Get user profile
         const { data: userData } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
+          .from("profiles")
+          .select("*")
+          .eq("id", session.user.id)
           .single();
 
         setCurrentUser(userData);
 
         // Get group details
         const { data: groupData, error: groupError } = await supabase
-          .from('groups')
-          .select('*')
-          .eq('id', groupId)
+          .from("groups")
+          .select("*")
+          .eq("id", groupId)
           .single();
 
         if (groupError) throw groupError;
         setGroup(groupData);
 
         // Get group members - two step approach
-        const { data: groupMembersData, error: groupMembersError } = await supabase
-          .from('group_members')
-          .select('user_id')
-          .eq('group_id', groupId);
+        const { data: groupMembersData, error: groupMembersError } =
+          await supabase
+            .from("group_members")
+            .select("user_id")
+            .eq("group_id", groupId);
 
         if (groupMembersError) throw groupMembersError;
 
         // Get user profiles for each member
         if (groupMembersData && groupMembersData.length > 0) {
-          const userIds = groupMembersData.map(member => member.user_id);
-          
+          const userIds = groupMembersData.map((member) => member.user_id);
+
           const { data: profilesData, error: profilesError } = await supabase
-            .from('profiles')
-            .select('id, name, email, avatar_url')
-            .in('id', userIds);
+            .from("profiles")
+            .select("id, name, email, avatar_url")
+            .in("id", userIds);
 
           if (profilesError) throw profilesError;
           setMembers(profilesData || []);
@@ -107,10 +117,10 @@ export default function GroupPage() {
 
         // Get group expenses
         const { data: expenseData, error: expenseError } = await supabase
-          .from('expenses')
-          .select('*')
-          .eq('group_id', groupId)
-          .order('date', { ascending: false });
+          .from("expenses")
+          .select("*")
+          .eq("group_id", groupId)
+          .order("date", { ascending: false });
 
         if (expenseError) throw expenseError;
         setExpenses(expenseData || []);
@@ -120,11 +130,11 @@ export default function GroupPage() {
           const calculatedBalances = calculateBalances(members, expenseData);
           setBalances(calculatedBalances);
         }
-        
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (error: any) {
-        console.error('Error fetching group data:', error);
-        setError(error.message || 'An error occurred while loading the group');
+        console.error("Error fetching group data:", error);
+        setError(error.message || "An error occurred while loading the group");
       } finally {
         setLoading(false);
       }
@@ -134,26 +144,28 @@ export default function GroupPage() {
   }, [groupId, router, members]);
 
   const handleRemoveMember = async (userId: string) => {
-    if (!confirm(`Are you sure you want to remove this member from the group?`)) {
+    if (
+      !confirm(`Are you sure you want to remove this member from the group?`)
+    ) {
       return;
     }
 
     setIsRemoving(true);
     try {
       const { error } = await supabase
-        .from('group_members')
+        .from("group_members")
         .delete()
-        .eq('group_id', groupId)
-        .eq('user_id', userId);
-      
+        .eq("group_id", groupId)
+        .eq("user_id", userId);
+
       if (error) throw error;
-      
+
       // Update the members list
-      setMembers(members.filter(member => member.id !== userId));
-      toast.success('Member removed successfully');
+      setMembers(members.filter((member) => member.id !== userId));
+      toast.success("Member removed successfully");
     } catch (error: any) {
-      console.error('Error removing member:', error);
-      toast.error(error.message || 'Failed to remove member');
+      console.error("Error removing member:", error);
+      toast.error(error.message || "Failed to remove member");
     } finally {
       setIsRemoving(false);
     }
@@ -170,28 +182,21 @@ export default function GroupPage() {
   if (error || !group) {
     return (
       <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-        {error || 'Group not found'}
+        {error || "Group not found"}
       </div>
     );
   }
 
   const findUserName = (userId: string) => {
-    const member = members.find(m => m.id === userId);
-    return member ? member.name : 'Unknown User';
-  };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'INR'
-    }).format(amount);
+    const member = members.find((m) => m.id === userId);
+    return member ? member.name : "Unknown User";
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
     });
   };
 
@@ -201,14 +206,27 @@ export default function GroupPage() {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">{group.name}</h1>
-          <p className="text-gray-500">{members.length} {members.length === 1 ? 'member' : 'members'}</p>
+          <p className="text-gray-500">
+            {members.length} {members.length === 1 ? "member" : "members"}
+          </p>
         </div>
         <Link
           href={`/groups/${groupId}/expenses/new`}
           className="bg-indigo-600 hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 text-white font-medium py-2 px-4 rounded-xl shadow-sm transition-all flex items-center gap-1"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-5 w-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+            />
           </svg>
           Add Expense
         </Link>
@@ -217,15 +235,28 @@ export default function GroupPage() {
       <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-6">
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 col-span-3">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold text-gray-800">Recent Expenses</h2>
+            <h2 className="text-lg font-semibold text-gray-800">
+              Recent Expenses
+            </h2>
             {expenses.length > 0 && (
               <Link
                 href={`/groups/${groupId}/expenses`}
                 className="text-indigo-600 hover:text-indigo-800 text-sm font-medium flex items-center gap-1"
               >
                 View all
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5l7 7-7 7"
+                  />
                 </svg>
               </Link>
             )}
@@ -240,15 +271,22 @@ export default function GroupPage() {
                 >
                   <div className="flex justify-between items-start">
                     <div>
-                      <h3 className="font-medium text-gray-800">{expense.description}</h3>
+                      <h3 className="font-medium text-gray-800">
+                        {expense.description}
+                      </h3>
                       <p className="text-sm text-gray-500 mt-0.5">
-                        {formatDate(expense.date)} • Paid by {findUserName(expense.paid_by)}
+                        {formatDate(expense.date)} • Paid by{" "}
+                        {findUserName(expense.paid_by)}
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="font-semibold text-gray-800">{formatCurrency(expense.amount)}</p>
+                      <p className="font-semibold text-gray-800">
+                        {formatCurrency(expense.amount)}
+                      </p>
                       <p className="text-xs text-gray-500 mt-0.5">
-                        {expense.split_type === 'equal' ? 'Split equally' : 'Split manually'}
+                        {expense.split_type === "equal"
+                          ? "Split equally"
+                          : "Split manually"}
                       </p>
                     </div>
                   </div>
@@ -257,10 +295,22 @@ export default function GroupPage() {
             </div>
           ) : (
             <div className="text-center py-10 px-4">
-              <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2z" />
+              <svg
+                className="mx-auto h-12 w-12 text-gray-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2z"
+                />
               </svg>
-              <p className="mt-2 text-gray-500 font-medium">No expenses yet. Add your first expense!</p>
+              <p className="mt-2 text-gray-500 font-medium">
+                No expenses yet. Add your first expense!
+              </p>
             </div>
           )}
         </div>
@@ -272,44 +322,66 @@ export default function GroupPage() {
             <div className="space-y-2">
               {balances.map((balance) => {
                 const isCurrentUser = balance.user_id === currentUser?.id;
-                const formattedAmount = formatCurrency(Math.abs(balance.amount));
-                let statusText = '';
-                let statusClass = '';
+                const formattedAmount = formatCurrency(
+                  Math.abs(balance.amount)
+                );
+                let statusText = "";
+                let statusClass = "";
 
                 if (balance.amount > 0) {
                   statusText = isCurrentUser
                     ? `You are owed ${formattedAmount}`
-                    : `${findUserName(balance.user_id)} is owed ${formattedAmount}`;
-                  statusClass = 'text-green-600';
+                    : `${findUserName(
+                        balance.user_id
+                      )} is owed ${formattedAmount}`;
+                  statusClass = "text-green-600";
                 } else if (balance.amount < 0) {
                   statusText = isCurrentUser
                     ? `You owe ${formattedAmount}`
-                    : `${findUserName(balance.user_id)} owes ${formattedAmount}`;
-                  statusClass = 'text-red-600';
+                    : `${findUserName(
+                        balance.user_id
+                      )} owes ${formattedAmount}`;
+                  statusClass = "text-red-600";
                 } else {
                   statusText = isCurrentUser
                     ? `You are settled up`
                     : `${findUserName(balance.user_id)} is settled up`;
-                  statusClass = 'text-gray-600';
+                  statusClass = "text-gray-600";
                 }
 
                 return (
                   <div
                     key={balance.user_id}
-                    className={`py-3 px-4 rounded-xl ${isCurrentUser ? 'bg-indigo-50' : 'hover:bg-gray-50'} transition-colors`}
+                    className={`py-3 px-4 rounded-xl ${
+                      isCurrentUser ? "bg-indigo-50" : "hover:bg-gray-50"
+                    } transition-colors`}
                   >
                     <div className="flex justify-between items-center">
                       <div className="flex items-center">
                         <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center mr-3 text-indigo-700 font-medium text-sm">
                           {findUserName(balance.user_id).charAt(0)}
                         </div>
-                        <span className="font-medium text-gray-800 truncate">{findUserName(balance.user_id)}</span>
+                        <span className="font-medium text-gray-800 truncate">
+                          {findUserName(balance.user_id)}
+                        </span>
                       </div>
-                      <span className={`font-medium ${balance.amount === 0 ? 'text-gray-600' : balance.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {balance.amount === 0 ? '' : formatCurrency(balance.amount)}
+                      <span
+                        className={`font-medium ${
+                          balance.amount === 0
+                            ? "text-gray-600"
+                            : balance.amount > 0
+                            ? "text-green-600"
+                            : "text-red-600"
+                        }`}
+                      >
+                        {balance.amount === 0
+                          ? ""
+                          : formatCurrency(balance.amount)}
                       </span>
                     </div>
-                    <p className={`text-xs mt-1 pl-11 ${statusClass}`}>{statusText}</p>
+                    <p className={`text-xs mt-1 pl-11 ${statusClass}`}>
+                      {statusText}
+                    </p>
                   </div>
                 );
               })}
@@ -338,8 +410,18 @@ export default function GroupPage() {
             href={`/groups/${groupId}/invite`}
             className="inline-flex items-center text-indigo-600 hover:text-indigo-800 text-sm font-medium"
           >
-            <svg className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            <svg
+              className="h-4 w-4 mr-1"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 4v16m8-8H4"
+              />
             </svg>
             Invite People
           </Link>
@@ -347,7 +429,10 @@ export default function GroupPage() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
           {members.map((member) => (
-            <div key={member.id} className="flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 transition-colors">
+            <div
+              key={member.id}
+              className="flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 transition-colors"
+            >
               <div className="flex items-center">
                 <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center mr-3 text-indigo-700 font-medium">
                   {member.avatar_url ? (
@@ -374,8 +459,17 @@ export default function GroupPage() {
                   className="text-red-500 hover:text-red-700 p-1 rounded-full hover:bg-red-50"
                   title="Remove member"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+                      clipRule="evenodd"
+                    />
                   </svg>
                 </button>
               )}
@@ -385,4 +479,4 @@ export default function GroupPage() {
       </div>
     </div>
   );
-} 
+}
