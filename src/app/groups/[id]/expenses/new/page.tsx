@@ -478,7 +478,7 @@ export default function NewExpensePage() {
                 Custom Split
               </h3>
               <p className="text-sm text-gray-600 mb-4">
-                Specify how much each person owes. The total should equal $
+                Specify how much each person owes. The total should equal रु
                 {amount || "0.00"}.
               </p>
 
@@ -505,11 +505,11 @@ export default function NewExpensePage() {
                   return (
                     <div
                       key={split.userId}
-                      className={`flex items-center p-3 rounded-xl ${
+                      className={`md:flex items-center p-3 rounded-xl ${
                         split.included ? "bg-gray-50" : "bg-gray-100 opacity-75"
                       }`}
                     >
-                      <div className="flex items-center w-1/2">
+                      <div className="flex items-center md:w-1/2 mb-2 md:mb-0">
                         <div
                           className={`h-8 w-8 rounded-full flex items-center justify-center mr-3 text-sm ${
                             split.included
@@ -529,10 +529,10 @@ export default function NewExpensePage() {
                         </span>
                       </div>
 
-                      <div className="w-1/2 flex gap-2">
+                      <div className="md:w-1/2 flex gap-2">
                         <div className="relative rounded-xl shadow-sm flex-grow">
                           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <span className="text-gray-500">$</span>
+                            <span className="text-gray-500">रु</span>
                           </div>
                           <input
                             type="number"

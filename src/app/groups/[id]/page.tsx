@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter, useParams } from "next/navigation";
 import { supabase } from "@/utils/supabase";
 import { formatCurrency } from "@/utils/currency";
-import { Group, User, Expense, Balance } from "@/types";
+import { Group, User, Expense, Balance, ExpenseSplit } from "@/types";
 import Image from "next/image";
 import toast, { Toaster } from "react-hot-toast";
 
@@ -17,16 +17,18 @@ export default function GroupPage() {
   const [group, setGroup] = useState<Group | null>(null);
   const [members, setMembers] = useState<User[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [expenseSplits, setExpenseSplits] = useState<ExpenseSplit[]>([]);
   const [balances, setBalances] = useState<Balance[]>([]);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isRemoving, setIsRemoving] = useState(false);
 
-  // Function to calculate balances from expenses and members
+  // Function to calculate balances from expenses, members, and expense splits
   const calculateBalances = (
     members: User[],
-    expenses: Expense[]
+    expenses: Expense[],
+    expenseSplits: ExpenseSplit[]
   ): Balance[] => {
     const balanceMap = new Map<string, number>();
 
@@ -38,18 +40,36 @@ export default function GroupPage() {
     // Calculate balances based on expenses
     expenses.forEach((expense) => {
       const paidBy = expense.paid_by;
-      const splitAmount = expense.amount / members.length;
 
       // Add the full amount to the person who paid
       balanceMap.set(paidBy, (balanceMap.get(paidBy) || 0) + expense.amount);
 
-      // Subtract the split amount from each member (including the payer)
-      members.forEach((member) => {
-        balanceMap.set(
-          member.id,
-          (balanceMap.get(member.id) || 0) - splitAmount
+      if (expense.split_type === "equal") {
+        // For equal splits, calculate the split amount based on member count
+        const includedMembers = members.length;
+        const splitAmount = expense.amount / includedMembers;
+
+        // Subtract the split amount from each member (including the payer)
+        members.forEach((member) => {
+          balanceMap.set(
+            member.id,
+            (balanceMap.get(member.id) || 0) - splitAmount
+          );
+        });
+      } else if (expense.split_type === "manual") {
+        // For manual splits, use the actual split amounts from expense_splits
+        const expenseSplitsForThisExpense = expenseSplits.filter(
+          (split) => split.expense_id === expense.id
         );
-      });
+
+        // Subtract each person's split amount
+        expenseSplitsForThisExpense.forEach((split) => {
+          balanceMap.set(
+            split.user_id,
+            (balanceMap.get(split.user_id) || 0) - split.amount
+          );
+        });
+      }
     });
 
     // Convert the map to an array of Balance objects
@@ -125,9 +145,28 @@ export default function GroupPage() {
         if (expenseError) throw expenseError;
         setExpenses(expenseData || []);
 
+        // Get expense splits for all expenses in this group
+        let allExpenseSplits: ExpenseSplit[] = [];
+        if (expenseData && expenseData.length > 0) {
+          const expenseIds = expenseData.map((expense) => expense.id);
+
+          const { data: splitData, error: splitError } = await supabase
+            .from("expense_splits")
+            .select("*")
+            .in("expense_id", expenseIds);
+
+          if (splitError) throw splitError;
+          allExpenseSplits = splitData || [];
+          setExpenseSplits(allExpenseSplits);
+        }
+
         // Calculate balances if we have both members and expenses
         if (members.length > 0 && expenseData) {
-          const calculatedBalances = calculateBalances(members, expenseData);
+          const calculatedBalances = calculateBalances(
+            members,
+            expenseData,
+            allExpenseSplits
+          );
           setBalances(calculatedBalances);
         }
 

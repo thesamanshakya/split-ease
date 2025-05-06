@@ -5,7 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/utils/supabase";
 import { formatCurrency } from "@/utils/currency";
-import { User } from "@/types";
+import { User, Expense, ExpenseSplit } from "@/types";
 
 interface Settlement {
   from: string;
@@ -25,6 +25,8 @@ export default function SettleUpPage() {
 
   const [group, setGroup] = useState<{ id: string; name: string } | null>(null);
   const [members, setMembers] = useState<User[]>([]);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [expenseSplits, setExpenseSplits] = useState<ExpenseSplit[]>([]);
   const [balances, setBalances] = useState<Balance[]>([]);
   const [settlements, setSettlements] = useState<Settlement[]>([]);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -91,42 +93,30 @@ export default function SettleUpPage() {
             .eq("group_id", groupId);
 
           if (expenseError) throw expenseError;
+          setExpenses(expenseData || []);
+
+          // Get expense splits for all expenses in this group
+          let allExpenseSplits: ExpenseSplit[] = [];
+          if (expenseData && expenseData.length > 0) {
+            const expenseIds = expenseData.map((expense) => expense.id);
+
+            const { data: splitData, error: splitError } = await supabase
+              .from("expense_splits")
+              .select("*")
+              .in("expense_id", expenseIds);
+
+            if (splitError) throw splitError;
+            allExpenseSplits = splitData || [];
+            setExpenseSplits(allExpenseSplits);
+          }
 
           // Calculate balances
           if (expenseData && profilesData.length > 0) {
-            const balanceMap = new Map<string, number>();
-
-            // Initialize balances for all members
-            profilesData.forEach((member) => {
-              balanceMap.set(member.id, 0);
-            });
-
-            // Calculate balances based on expenses
-            expenseData.forEach((expense) => {
-              const paidBy = expense.paid_by;
-              const splitAmount = expense.amount / profilesData.length;
-
-              // Add the full amount to the person who paid
-              balanceMap.set(
-                paidBy,
-                (balanceMap.get(paidBy) || 0) + expense.amount
-              );
-
-              // Subtract the split amount from each member (including the payer)
-              profilesData.forEach((member) => {
-                balanceMap.set(
-                  member.id,
-                  (balanceMap.get(member.id) || 0) - splitAmount
-                );
-              });
-            });
-
-            // Convert the map to an array of Balance objects
-            const balanceArray: Balance[] = Array.from(balanceMap).map(
-              ([user_id, amount]) => ({
-                user_id,
-                amount,
-              })
+            // Use the new calculateBalances function
+            const balanceArray = calculateBalances(
+              profilesData,
+              expenseData,
+              allExpenseSplits
             );
 
             setBalances(balanceArray);
@@ -147,6 +137,61 @@ export default function SettleUpPage() {
 
     fetchGroupData();
   }, [groupId, router]);
+
+  // Function to calculate balances from expenses, members, and expense splits
+  const calculateBalances = (
+    members: User[],
+    expenses: Expense[],
+    expenseSplits: ExpenseSplit[]
+  ): Balance[] => {
+    const balanceMap = new Map<string, number>();
+
+    // Initialize balances for all members
+    members.forEach((member) => {
+      balanceMap.set(member.id, 0);
+    });
+
+    // Calculate balances based on expenses
+    expenses.forEach((expense) => {
+      const paidBy = expense.paid_by;
+
+      // Add the full amount to the person who paid
+      balanceMap.set(paidBy, (balanceMap.get(paidBy) || 0) + expense.amount);
+
+      if (expense.split_type === "equal") {
+        // For equal splits, calculate the split amount based on member count
+        const includedMembers = members.length;
+        const splitAmount = expense.amount / includedMembers;
+
+        // Subtract the split amount from each member (including the payer)
+        members.forEach((member) => {
+          balanceMap.set(
+            member.id,
+            (balanceMap.get(member.id) || 0) - splitAmount
+          );
+        });
+      } else if (expense.split_type === "manual") {
+        // For manual splits, use the actual split amounts from expense_splits
+        const expenseSplitsForThisExpense = expenseSplits.filter(
+          (split) => split.expense_id === expense.id
+        );
+
+        // Subtract each person's split amount
+        expenseSplitsForThisExpense.forEach((split) => {
+          balanceMap.set(
+            split.user_id,
+            (balanceMap.get(split.user_id) || 0) - split.amount
+          );
+        });
+      }
+    });
+
+    // Convert the map to an array of Balance objects
+    return Array.from(balanceMap).map(([user_id, amount]) => ({
+      user_id,
+      amount,
+    }));
+  };
 
   // Calculate the optimal way to settle up
   const calculateSettlements = (balances: Balance[]): Settlement[] => {
