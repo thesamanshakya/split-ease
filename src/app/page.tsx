@@ -13,7 +13,7 @@ import { Logo } from "@/components/ui/logo";
 
 export default function LandingPage() {
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col -mx-5">
       {/* Hero Section */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center gap-6 pt-20 md:pt-32 text-center">
         <div className="flex items-center justify-center rounded-full bg-indigo-100 px-4 py-1 text-sm text-indigo-700 mb-4">
@@ -39,7 +39,7 @@ export default function LandingPage() {
             </Button>
           </Link>
         </div>
-        <div className="mt-12 w-full max-w-4xl overflow-hidden rounded-lg border bg-background shadow-md">
+        <div className="mt-7 md:mt-12 w-full max-w-4xl overflow-hidden rounded-lg border bg-background shadow-md">
           <img
             src="/split-ease-1.jpg"
             alt="SplitEase app dashboard"
@@ -49,7 +49,7 @@ export default function LandingPage() {
       </section>
 
       {/* How It Works Section */}
-      <section id="how-it-works" className="bg-slate-50 py-20">
+      <section id="how-it-works" className="bg-slate-50 py-12 md:py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col items-center text-center mb-6 md:mb-8">
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl mb-4">
@@ -59,7 +59,7 @@ export default function LandingPage() {
               Split bills with friends in just a few simple steps
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 md:gap-8">
             {[
               {
                 step: 1,
@@ -99,7 +99,7 @@ export default function LandingPage() {
       </section>
 
       {/* Features Section */}
-      <section id="features" className="py-20">
+      <section id="features" className="py-12 md:py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col items-center text-center mb-6 md:mb-8">
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl mb-4">
@@ -109,7 +109,7 @@ export default function LandingPage() {
               Everything you need to manage expenses with friends
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-8">
             {[
               {
                 title: "Easy expense tracking",
@@ -196,7 +196,7 @@ export default function LandingPage() {
             <Link href="#" className="hover:text-foreground transition-colors">
               Contact Us
             </Link>
-            <p>© 2025 SplitEase. All rights reserved.</p>
+            <p>© {new Date().getFullYear()} SplitEase. All rights reserved.</p>
           </div>
         </div>
       </footer>
