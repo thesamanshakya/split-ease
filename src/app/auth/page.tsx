@@ -1,18 +1,38 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import AuthForm from '@/components/auth/AuthForm';
-import { supabase } from '@/utils/supabase';
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import AuthForm from "@/components/auth/AuthForm";
 
 export default function AuthPage() {
   const router = useRouter();
 
   useEffect(() => {
     const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        router.push('/dashboard');
+      try {
+        // Get current user from our session API
+        const response = await fetch("/api/auth/session", {
+          method: "GET",
+          credentials: "include", // Important: This ensures cookies are sent with the request
+          headers: {
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            Pragma: "no-cache",
+            Expires: "0",
+          },
+        });
+
+        if (!response.ok) {
+          console.error("Failed to fetch session:", response.status);
+          return;
+        }
+
+        const sessionData = await response.json();
+
+        if (sessionData.isLoggedIn && sessionData.user) {
+          router.push("/dashboard");
+        }
+      } catch (error) {
+        console.error("Error checking session:", error);
       }
     };
 
@@ -21,12 +41,15 @@ export default function AuthPage() {
 
   return (
     <div className="py-8">
-      <h1 className="text-3xl font-bold text-center mb-8">Welcome to SplitEase</h1>
+      <h1 className="text-3xl font-bold text-center mb-8">
+        Welcome to SplitEase
+      </h1>
       <p className="text-center text-gray-600 mb-8 max-w-md mx-auto">
-        Split restaurant bills effortlessly with friends and keep track of who owes what.
+        Split restaurant bills effortlessly with friends and keep track of who
+        owes what.
       </p>
 
       <AuthForm />
     </div>
   );
-} 
+}

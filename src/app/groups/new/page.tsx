@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { supabase } from '@/utils/supabase';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { supabase } from "@/utils/supabase";
 
 export default function NewGroupPage() {
   const router = useRouter();
-  const [name, setName] = useState('');
+  const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -16,35 +16,52 @@ export default function NewGroupPage() {
     setError(null);
 
     try {
-      // Get current user
-      const { data: { session } } = await supabase.auth.getSession();
+      // Get current user from our session API
+      const response = await fetch("/api/auth/session", {
+        method: "GET",
+        credentials: "include", // Important: This ensures cookies are sent with the request
+        headers: {
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
+        },
+      });
 
-      if (!session?.user?.id) {
-        throw new Error('You must be logged in to create a group');
+      if (!response.ok) {
+        console.error("Failed to fetch session:", response.status);
+        throw new Error("You must be logged in to create a group");
       }
+
+      const sessionData = await response.json();
+
+      if (!sessionData.isLoggedIn || !sessionData.user) {
+        throw new Error("You must be logged in to create a group");
+      }
+
+      const userId = sessionData.user.id;
 
       // Create the group
       const { data: groupData, error: groupError } = await supabase
-        .from('groups')
+        .from("groups")
         .insert([
           {
             name,
-            created_by: session.user.id
-          }
+            created_by: userId,
+          },
         ])
-        .select('id')
+        .select("id")
         .single();
 
       if (groupError) throw groupError;
 
       // Add the creator as a member of the group
       const { error: memberError } = await supabase
-        .from('group_members')
+        .from("group_members")
         .insert([
           {
             group_id: groupData.id,
-            user_id: session.user.id
-          }
+            user_id: userId,
+          },
         ]);
 
       if (memberError) throw memberError;
@@ -52,7 +69,10 @@ export default function NewGroupPage() {
       // Redirect to the group page
       router.push(`/groups/${groupData.id}`);
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'An error occurred while creating the group';
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "An error occurred while creating the group";
       setError(errorMessage);
       setLoading(false);
     }
@@ -91,12 +111,14 @@ export default function NewGroupPage() {
           <button
             type="submit"
             disabled={loading}
-            className={`w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
+            className={`w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 ${
+              loading ? "opacity-70 cursor-not-allowed" : ""
+            }`}
           >
-            {loading ? 'Creating...' : 'Create Group'}
+            {loading ? "Creating..." : "Create Group"}
           </button>
         </form>
       </div>
     </div>
   );
-} 
+}

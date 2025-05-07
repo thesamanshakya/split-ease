@@ -28,25 +28,33 @@ export default function NewExpensePage() {
   useEffect(() => {
     const fetchGroupMembers = async () => {
       try {
-        // Get current user
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
+        // Get current user from our session API
+        const response = await fetch("/api/auth/session", {
+          method: "GET",
+          credentials: "include", // Important: This ensures cookies are sent with the request
+          headers: {
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            Pragma: "no-cache",
+            Expires: "0",
+          },
+        });
 
-        if (!session?.user?.id) {
+        if (!response.ok) {
+          console.error("Failed to fetch session:", response.status);
           router.push("/auth");
           return;
         }
 
-        // Get user profile
-        const { data: userData } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", session.user.id)
-          .single();
+        const sessionData = await response.json();
 
-        setCurrentUser(userData);
-        setPaidBy(session.user.id);
+        if (!sessionData.isLoggedIn || !sessionData.user) {
+          router.push("/auth");
+          return;
+        }
+
+        const userId = sessionData.user.id;
+        setCurrentUser(sessionData.user);
+        setPaidBy(userId);
 
         // Get group members - two step approach
         const { data: groupMembersData, error: groupMembersError } =

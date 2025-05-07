@@ -101,20 +101,39 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchUserAndGroups = async () => {
       try {
-        // Get current user
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
+        // Get current user from our session API
+        const response = await fetch("/api/auth/session", {
+          method: "GET",
+          credentials: "include", // Important: This ensures cookies are sent with the request
+          headers: {
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            Pragma: "no-cache",
+            Expires: "0",
+          },
+        });
 
-        if (session?.user?.id) {
-          // Get user profile
+        if (!response.ok) {
+          console.error("Failed to fetch session:", response.status);
+          setLoading(false);
+          return;
+        }
+
+        const sessionData = await response.json();
+
+        if (sessionData.isLoggedIn && sessionData.user) {
+          const userId = sessionData.user.id;
+          setUser(sessionData.user);
+
+          // Get user profile (if needed for additional data)
           const { data: userData } = await supabase
             .from("profiles")
             .select("*")
-            .eq("id", session.user.id)
+            .eq("id", userId)
             .single();
 
-          setUser(userData);
+          if (userData) {
+            setUser(userData);
+          }
 
           // Get user's groups
           const { data: groupsData } = await supabase
@@ -130,7 +149,7 @@ export default function Dashboard() {
               )
             `
             )
-            .eq("user_id", session.user.id);
+            .eq("user_id", userId);
 
           if (groupsData) {
             const formattedGroups = groupsData.map(
@@ -220,7 +239,7 @@ export default function Dashboard() {
 
                 // Find the current user's balance
                 const currentUserBalance = balances.find(
-                  (b) => b.user_id === session.user.id
+                  (b) => b.user_id === userId
                 );
 
                 if (currentUserBalance) {

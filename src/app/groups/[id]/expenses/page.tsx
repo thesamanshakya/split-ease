@@ -23,11 +23,26 @@ export default function GroupExpensesPage() {
   useEffect(() => {
     const fetchGroupData = async () => {
       try {
-        // Check user is logged in
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        if (!session?.user?.id) {
+        // Get current user from our session API
+        const response = await fetch("/api/auth/session", {
+          method: "GET",
+          credentials: "include", // Important: This ensures cookies are sent with the request
+          headers: {
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            Pragma: "no-cache",
+            Expires: "0",
+          },
+        });
+
+        if (!response.ok) {
+          console.error("Failed to fetch session:", response.status);
+          router.push("/auth");
+          return;
+        }
+
+        const sessionData = await response.json();
+
+        if (!sessionData.isLoggedIn || !sessionData.user) {
           router.push("/auth");
           return;
         }
@@ -76,7 +91,7 @@ export default function GroupExpensesPage() {
     };
 
     fetchGroupData();
-  }, [groupId, router, members]);
+  }, [groupId, router]);
 
   const fetchExpenses = async () => {
     try {

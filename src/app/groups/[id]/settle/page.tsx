@@ -53,23 +53,31 @@ export default function SettleUpPage() {
   useEffect(() => {
     const fetchGroupData = async () => {
       try {
-        // Check user is logged in
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        if (!session?.user?.id) {
+        // Get current user from our session API
+        const response = await fetch("/api/auth/session", {
+          method: "GET",
+          credentials: "include", // Important: This ensures cookies are sent with the request
+          headers: {
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            Pragma: "no-cache",
+            Expires: "0",
+          },
+        });
+
+        if (!response.ok) {
+          console.error("Failed to fetch session:", response.status);
           router.push("/auth");
           return;
         }
 
-        // Get user profile
-        const { data: userData } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", session.user.id)
-          .single();
+        const sessionData = await response.json();
 
-        setCurrentUser(userData);
+        if (!sessionData.isLoggedIn || !sessionData.user) {
+          router.push("/auth");
+          return;
+        }
+
+        setCurrentUser(sessionData.user);
 
         // Get group details
         const { data: groupData, error: groupError } = await supabase

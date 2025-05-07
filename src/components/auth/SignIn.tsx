@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/utils/supabase";
 
 export default function SignIn() {
   const [email, setEmail] = useState("");
@@ -17,15 +16,39 @@ export default function SignIn() {
     setError(null);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+      // Use the login API endpoint instead of direct Supabase auth
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        credentials: "include", // Important: This ensures cookies are sent with the request
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
       });
 
-      if (error) throw error;
-      router.push("/dashboard");
-      // Successful login will automatically redirect through middleware
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to sign in");
+      }
+
+      if (data.success) {
+        // Trigger a storage event for cross-tab synchronization
+        localStorage.setItem("auth-state-change", Date.now().toString());
+
+        // Force a refresh to ensure the middleware picks up the session
+        router.refresh();
+
+        // Add a small delay to ensure the session is properly set
+        setTimeout(() => {
+          // Navigate to dashboard
+          router.push("/dashboard");
+        }, 500);
+      } else {
+        throw new Error("Failed to establish session");
+      }
     } catch (error: unknown) {
+      console.error("Sign in error:", error);
       const errorMessage =
         error instanceof Error
           ? error.message

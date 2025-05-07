@@ -110,24 +110,31 @@ export default function GroupPage() {
   useEffect(() => {
     const fetchGroupData = async () => {
       try {
-        // Get current user
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
+        // Get current user from our session API
+        const response = await fetch("/api/auth/session", {
+          method: "GET",
+          credentials: "include", // Important: This ensures cookies are sent with the request
+          headers: {
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            Pragma: "no-cache",
+            Expires: "0",
+          },
+        });
 
-        if (!session?.user?.id) {
+        if (!response.ok) {
+          console.error("Failed to fetch session:", response.status);
           router.push("/auth");
           return;
         }
 
-        // Get user profile
-        const { data: userData } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", session.user.id)
-          .single();
+        const sessionData = await response.json();
 
-        setCurrentUser(userData);
+        if (!sessionData.isLoggedIn || !sessionData.user) {
+          router.push("/auth");
+          return;
+        }
+
+        setCurrentUser(sessionData.user);
 
         // Get group details
         const { data: groupData, error: groupError } = await supabase
@@ -149,18 +156,20 @@ export default function GroupPage() {
         if (groupMembersError) throw groupMembersError;
 
         // Get user profiles for each member
+        let profilesData: User[] = [];
         if (groupMembersData && groupMembersData.length > 0) {
           const userIds = groupMembersData.map((member) => member.user_id);
 
-          const { data: profilesData, error: profilesError } = await supabase
+          const { data: fetchedProfiles, error: profilesError } = await supabase
             .from("profiles")
             .select("id, name, email, avatar_url")
             .in("id", userIds);
 
           if (profilesError) throw profilesError;
-          setMembers(profilesData || []);
+          profilesData = fetchedProfiles || [];
+          // We'll set members later after calculating balances
         } else {
-          setMembers([]);
+          // No members in this group
         }
 
         // Get group expenses
@@ -202,10 +211,14 @@ export default function GroupPage() {
           setSettlements(settlementsData || []);
         }
 
+        // Get the updated members list from the profiles data we fetched earlier
+        const updatedMembers = profilesData || [];
+        setMembers(updatedMembers);
+
         // Calculate balances if we have both members and expenses
-        if (members.length > 0 && expenseData) {
+        if (updatedMembers.length > 0 && expenseData) {
           const calculatedBalances = calculateBalances(
-            members,
+            updatedMembers,
             expenseData,
             allExpenseSplits,
             settlementsData || []
@@ -225,7 +238,7 @@ export default function GroupPage() {
     };
 
     fetchGroupData();
-  }, [groupId, router, members]);
+  }, [groupId, router]);
 
   const handleRemoveMember = async (userId: string) => {
     if (

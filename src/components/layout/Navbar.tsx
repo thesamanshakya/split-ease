@@ -1,11 +1,10 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useState, useRef } from 'react';
-import { supabase } from '@/utils/supabase';
-import { User } from '@/types';
-import toast, { Toaster } from 'react-hot-toast';
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState, useRef } from "react";
+import { User } from "@/types";
+import toast, { Toaster } from "react-hot-toast";
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -17,54 +16,95 @@ export default function Navbar() {
   useEffect(() => {
     const getUser = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        // Use the session API endpoint with credentials to ensure cookies are sent
+        const response = await fetch("/api/auth/session", {
+          method: "GET",
+          credentials: "include", // Important: This ensures cookies are sent with the request
+          headers: {
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            Pragma: "no-cache",
+            Expires: "0",
+          },
+        });
 
-        if (session?.user?.id) {
-          const { data } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
+        if (!response.ok) {
+          setUser(null);
+          return;
+        }
 
-          setUser(data || null);
+        const data = await response.json();
+
+        if (data.isLoggedIn && data.user) {
+          setUser(data.user);
+        } else {
+          setUser(null);
         }
       } catch (error) {
-        console.error('Error getting user:', error);
+        console.error("Error getting user:", error);
+        setUser(null);
       }
     };
 
+    // Initial user fetch
     getUser();
 
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (event) => {
-      if (event === 'SIGNED_IN') {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user?.id) {
-          const { data } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
+    // Set up an interval to periodically check the session
+    const intervalId = setInterval(getUser, 30000); // Check every 30 seconds
 
-          setUser(data || null);
-        }
-      } else if (event === 'SIGNED_OUT') {
-        setUser(null);
+    // Listen for storage events (for cross-tab synchronization)
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key === "auth-state-change") {
+        getUser();
       }
-    });
+    };
+
+    // Also check when the window gets focus
+    const handleFocus = () => {
+      getUser();
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    window.addEventListener("focus", handleFocus);
 
     return () => {
-      authListener?.subscription.unsubscribe();
+      clearInterval(intervalId);
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("focus", handleFocus);
     };
   }, []);
 
   const handleSignOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      toast.error('Sign out failed. Please try again.');
-    } else {
-      toast.success('Signed out successfully!');
-      setUser(null);
-      router.push('/auth');
+    try {
+      // Use the logout API endpoint instead of direct Supabase auth
+      const response = await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "include", // Important: This ensures cookies are sent with the request
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to sign out");
+      }
+
+      if (data.success) {
+        toast.success("Signed out successfully!");
+        setUser(null);
+
+        // Trigger a storage event for cross-tab synchronization
+        localStorage.setItem("auth-state-change", Date.now().toString());
+
+        // Force a refresh to ensure the middleware picks up the session change
+        router.refresh();
+
+        // Navigate to auth page
+        router.push("/auth");
+      } else {
+        throw new Error("Failed to sign out");
+      }
+    } catch (error) {
+      console.error("Sign out exception:", error);
+      toast.error("An unexpected error occurred during sign out.");
     }
   };
 
@@ -75,14 +115,17 @@ export default function Navbar() {
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setDropdownOpen(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
 
@@ -100,15 +143,18 @@ export default function Navbar() {
               <>
                 <Link
                   href="/dashboard"
-                  className={`hover:text-indigo-200 ${pathname === '/dashboard' ? 'text-white font-medium' : 'text-indigo-100'
-                    }`}
+                  className={`hover:text-indigo-200 ${
+                    pathname === "/dashboard"
+                      ? "text-white font-medium"
+                      : "text-indigo-100"
+                  }`}
                 >
                   Dashboard
                 </Link>
-               
+
                 <div className="relative group" ref={dropdownRef}>
-                  <button 
-                    className="flex items-center hover:text-indigo-200" 
+                  <button
+                    className="flex items-center hover:text-indigo-200"
                     onClick={toggleDropdown}
                   >
                     <span className="mr-1">{user.name}</span>
@@ -127,9 +173,11 @@ export default function Navbar() {
                       />
                     </svg>
                   </button>
-                  <div 
-                    className={`absolute right-0 w-48 bg-white rounded-md shadow-lg py-1 z-10 
-                      ${dropdownOpen ? 'block' : 'hidden md:group-hover:block'}`}
+                  <div
+                    className={`absolute right-0 w-48 bg-white rounded-md shadow-lg py-1 z-10
+                      ${
+                        dropdownOpen ? "block" : "hidden md:group-hover:block"
+                      }`}
                   >
                     <Link
                       href="/profile"
@@ -151,10 +199,7 @@ export default function Navbar() {
                 </div>
               </>
             ) : (
-              <Link
-                href="/auth"
-                className="hover:text-indigo-200"
-              >
+              <Link href="/auth" className="hover:text-indigo-200">
                 Sign in
               </Link>
             )}
@@ -163,4 +208,4 @@ export default function Navbar() {
       </div>
     </nav>
   );
-} 
+}
