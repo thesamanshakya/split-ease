@@ -4,9 +4,14 @@ import { getIronSession } from "iron-session";
 import { sessionOptions, SessionData } from "@/utils/session";
 
 export async function middleware(request: NextRequest) {
-  // Skip API routes
+  // Skip API routes and static files
   const isApiRoute = request.nextUrl.pathname.startsWith("/api");
-  if (isApiRoute) {
+  const isStaticFile =
+    request.nextUrl.pathname.includes(".") || // Files with extensions (like .jpg, .svg, etc.)
+    request.nextUrl.pathname.startsWith("/_next") ||
+    request.nextUrl.pathname.startsWith("/favicon.ico");
+
+  if (isApiRoute || isStaticFile) {
     return NextResponse.next();
   }
 
@@ -53,5 +58,15 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - api (API routes)
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - .*\\..* (files with extensions like .jpg, .png, etc.)
+     */
+    "/((?!api|_next/static|_next/image|favicon\\.ico|.*\\..*).+)",
+  ],
 };

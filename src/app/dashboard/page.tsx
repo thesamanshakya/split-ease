@@ -162,36 +162,38 @@ export default function Dashboard() {
 
             if (groupIds.length > 0) {
               // Fetch all users from the user's groups for displaying names
+              // First, get all user_ids from group_members
               const { data: groupMembersData } = await supabase
                 .from("group_members")
-                .select(
-                  `
-                  user_id,
-                  profiles:user_id (
-                    id,
-                    name,
-                    email,
-                    avatar_url
-                  )
-                `
-                )
+                .select("user_id")
                 .in("group_id", groupIds);
 
               // Create a map of all users
               const usersMap: Record<string, User> = {};
-              if (groupMembersData) {
-                groupMembersData.forEach((member) => {
-                  if (member.profiles) {
-                    const profile = member.profiles as any;
+
+              if (groupMembersData && groupMembersData.length > 0) {
+                // Get unique user IDs
+                const userIds = [
+                  ...new Set(groupMembersData.map((member) => member.user_id)),
+                ];
+
+                // Then fetch the profiles for those users
+                const { data: profilesData } = await supabase
+                  .from("profiles")
+                  .select("id, name, email, avatar_url")
+                  .in("id", userIds);
+
+                if (profilesData) {
+                  profilesData.forEach((profile) => {
                     usersMap[profile.id] = {
                       id: profile.id,
                       name: profile.name,
                       email: profile.email,
                       avatar_url: profile.avatar_url,
                     };
-                  }
-                });
-                setAllUsers(usersMap);
+                  });
+                  setAllUsers(usersMap);
+                }
               }
 
               // Get all expenses from all user's groups (not just recent ones)
@@ -235,6 +237,9 @@ export default function Dashboard() {
                   allExpenseSplitsData,
                   allSettlementsData || []
                 );
+
+                console.log(balances, ".........++++++");
+
                 setAggregatedBalances(balances);
 
                 // Find the current user's balance

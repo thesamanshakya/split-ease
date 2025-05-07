@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="1200" height="600" viewBox="0 0 1200 600" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="600" fill="#f8fafc" />
+  
+  <!-- Header -->
+  <rect x="50" y="50" width="1100" height="80" rx="8" fill="#f1f5f9" />
+  <rect x="80" y="75" width="200" height="30" rx="4" fill="#e2e8f0" />
+  <rect x="800" y="75" width="100" height="30" rx="4" fill="#e2e8f0" />
+  <rect x="920" y="75" width="100" height="30" rx="4" fill="#4f46e5" />
+  <rect x="1040" y="75" width="80" height="30" rx="4" fill="#e2e8f0" />
+  
+  <!-- Left Sidebar -->
+  <rect x="50" y="150" width="250" height="400" rx="8" fill="#f1f5f9" />
+  <rect x="80" y="180" width="190" height="40" rx="4" fill="#e2e8f0" />
+  <rect x="80" y="240" width="190" height="40" rx="4" fill="#e2e8f0" />
+  <rect x="80" y="300" width="190" height="40" rx="4" fill="#4f46e5" />
+  <rect x="80" y="360" width="190" height="40" rx="4" fill="#e2e8f0" />
+  <rect x="80" y="420" width="190" height="40" rx="4" fill="#e2e8f0" />
+  
+  <!-- Main Content Area -->
+  <rect x="320" y="150" width="830" height="180" rx="8" fill="#f1f5f9" />
+  <rect x="350" y="180" width="300" height="30" rx="4" fill="#e2e8f0" />
+  <rect x="350" y="230" width="770" height="70" rx="4" fill="#e2e8f0" />
+  
+  <!-- Expense Cards -->
+  <rect x="320" y="350" width="400" height="200" rx="8" fill="#f1f5f9" />
+  <rect x="350" y="380" width="200" height="30" rx="4" fill="#e2e8f0" />
+  <rect x="350" y="430" width="340" height="40" rx="4" fill="#e2e8f0" />
+  <rect x="350" y="490" width="340" height="40" rx="4" fill="#e2e8f0" />
+  
+  <!-- Balance Cards -->
+  <rect x="740" y="350" width="410" height="200" rx="8" fill="#f1f5f9" />
+  <rect x="770" y="380" width="200" height="30" rx="4" fill="#e2e8f0" />
+  <rect x="770" y="430" width="350" height="40" rx="4" fill="#e2e8f0" />
+  <rect x="770" y="490" width="350" height="40" rx="4" fill="#4f46e5" />
+  
+  <!-- SplitEase Logo Text -->
+  <text x="600" y="320" font-family="Arial, sans-serif" font-size="24" font-weight="bold" text-anchor="middle" fill="#4f46e5">SplitEase Dashboard Preview</text>
+</svg>
