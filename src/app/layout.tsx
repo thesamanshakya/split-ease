@@ -2,6 +2,12 @@ import type { Metadata } from "next";
 import { Roboto, Roboto_Slab } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/layout/Header";
+import dynamic from "next/dynamic";
+
+// Dynamically import Google Analytics to avoid SSR issues
+const GoogleAnalytics = dynamic(() => import("@/components/analytics/GoogleAnalytics"), {
+  ssr: false,
+});
 
 const roboto = Roboto({
   weight: ["400", "500", "700"],
@@ -27,6 +33,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        {/* Add Google Analytics */}
+        <GoogleAnalytics />
+      </head>
       <body
         className={`${roboto.variable} ${robotoSlab.variable} font-sans bg-gray-50 min-h-screen`}
       >
