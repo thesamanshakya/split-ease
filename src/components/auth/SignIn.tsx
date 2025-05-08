@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { toast } from "react-hot-toast";
 
 export default function SignIn() {
   const [email, setEmail] = useState("");
@@ -9,6 +10,7 @@ export default function SignIn() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,6 +60,22 @@ export default function SignIn() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    // Check if this is a verification redirect
+    const verification = searchParams.get("verification");
+    
+    if (verification === "success") {
+      // Show success message
+      toast.success("Email verified successfully! Please log in to continue.", {
+        duration: 5000,
+        style: {
+          background: "#333",
+          color: "#fff",
+        },
+      });
+    }
+  }, [searchParams]);
 
   return (
     <div>
