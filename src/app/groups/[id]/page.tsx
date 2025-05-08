@@ -421,7 +421,6 @@ export default function GroupPage() {
 
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 col-span-2">
           <h2 className="text-lg font-semibold mb-4 text-gray-800">Balances</h2>
-
           {balances.length > 0 ? (
             <div className="space-y-2">
               {balances.map((balance) => {
@@ -466,7 +465,7 @@ export default function GroupPage() {
                         }`}
                       >
                         {balance.amount === 0 ? (
-                          "All settled"
+                          <span className="block mt-1.5">All settled</span>
                         ) : balance.amount > 0 ? (
                           <>
                             Has to receive

@@ -38,6 +38,7 @@ export default function Dashboard() {
   const [chartData, setChartData] = useState<
     { category: string; amount: number }[]
   >([]);
+  const [groupBalances, setGroupBalances] = useState<Record<string, number>>({});
 
   // Function to calculate balances from expenses, members, expense splits, and settlements
   const calculateAggregatedBalances = (
@@ -108,6 +109,58 @@ export default function Dashboard() {
       user_id,
       amount,
     }));
+  };
+
+  // Function to calculate balances per group
+  const calculateGroupBalances = (
+    userId: string,
+    groups: Group[],
+    allExpenses: Expense[],
+    allExpenseSplits: ExpenseSplit[],
+    allSettlements: Settlement[],
+    allUsers: Record<string, User>
+  ): Record<string, number> => {
+    const groupBalances: Record<string, number> = {};
+    
+    // Initialize balances for all groups
+    groups.forEach(group => {
+      groupBalances[group.id] = 0;
+    });
+    
+    // Process each group separately
+    groups.forEach(group => {
+      // Filter data for this group
+      const groupExpenses = allExpenses.filter(expense => expense.group_id === group.id);
+      const groupSettlements = allSettlements.filter(settlement => settlement.group_id === group.id);
+      
+      // Get all expense IDs for this group
+      const expenseIds = groupExpenses.map(expense => expense.id);
+      
+      // Filter expense splits for this group's expenses
+      const groupExpenseSplits = allExpenseSplits.filter(split => 
+        expenseIds.includes(split.expense_id)
+      );
+      
+      // Get all user IDs in this group
+      const userIds = Object.keys(allUsers);
+      const groupMembers = userIds.map(id => allUsers[id]);
+      
+      // Calculate balances for this group
+      const balances = calculateAggregatedBalances(
+        groupMembers,
+        groupExpenses,
+        groupExpenseSplits,
+        groupSettlements
+      );
+      
+      // Find the current user's balance in this group
+      const userBalance = balances.find(balance => balance.user_id === userId);
+      if (userBalance) {
+        groupBalances[group.id] = userBalance.amount;
+      }
+    });
+    
+    return groupBalances;
   };
 
   useEffect(() => {
@@ -310,6 +363,18 @@ export default function Dashboard() {
                   setTotalToPay(0);
                   setTotalToReceive(0);
                 }
+                
+                // Calculate balances per group
+                const perGroupBalances = calculateGroupBalances(
+                  userId,
+                  formattedGroups,
+                  allExpensesArray,
+                  allExpenseSplitsData || [],
+                  allSettlementsData || [],
+                  usersMap
+                );
+                
+                setGroupBalances(perGroupBalances);
               }
 
               // Get recent expenses for activity feed
@@ -459,19 +524,36 @@ export default function Dashboard() {
                 >
                   <div className="flex justify-between items-center">
                     <span className="font-medium">{group.name}</span>
-                    <svg
-                      className="h-5 w-5 text-gray-400"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 5l7 7-7 7"
-                      />
-                    </svg>
+                    <div className="flex items-center">
+                      {groupBalances[group.id] !== undefined && (
+                        <span className={`mr-2 text-sm font-medium ${
+                          groupBalances[group.id] < 0 
+                            ? 'text-red-600' 
+                            : groupBalances[group.id] > 0 
+                            ? 'text-green-600' 
+                            : 'text-gray-600'
+                        }`}>
+                          {groupBalances[group.id] < 0 
+                            ? `You owe ${formatCurrency(Math.abs(groupBalances[group.id]))}`
+                            : groupBalances[group.id] > 0 
+                            ? `You get ${formatCurrency(groupBalances[group.id])}` 
+                            : "Settled up"}
+                        </span>
+                      )}
+                      <svg
+                        className="h-5 w-5 text-gray-400"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 5l7 7-7 7"
+                        />
+                      </svg>
+                    </div>
                   </div>
                 </Link>
               ))}

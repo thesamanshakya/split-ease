@@ -114,7 +114,8 @@ export default function SettleUpPage() {
           const { data: expenseData, error: expenseError } = await supabase
             .from("expenses")
             .select("*")
-            .eq("group_id", groupId);
+            .eq("group_id", groupId)
+            .order("date", { ascending: false });
 
           if (expenseError) throw expenseError;
           setExpenses(expenseData || []);
@@ -154,10 +155,18 @@ export default function SettleUpPage() {
             const balanceArray = calculateBalances(
               profilesData,
               expenseData,
-              allExpenseSplits
+              allExpenseSplits,
+              settlementsData || []
             );
 
-            setBalances(balanceArray);
+            console.log("Calculated balances:", balanceArray);
+            // Ensure we're not getting zero balances due to rounding issues
+            const nonZeroBalances = balanceArray.map((balance) => ({
+              ...balance,
+              // Preserve the original amount without rounding
+              amount: balance.amount,
+            }));
+            setBalances(nonZeroBalances);
 
             // Calculate optimal settlements
             const settlements = calculateSettlements(balanceArray);
@@ -210,11 +219,12 @@ export default function SettleUpPage() {
     fetchGroupData();
   }, [groupId, router]);
 
-  // Function to calculate balances from expenses, members, and expense splits
+  // Function to calculate balances from expenses, members, expense splits, and settlements
   const calculateBalances = (
     members: User[],
     expenses: Expense[],
-    expenseSplits: ExpenseSplit[]
+    expenseSplits: ExpenseSplit[],
+    recordedSettlements: RecordedSettlement[] = []
   ): Balance[] => {
     const balanceMap = new Map<string, number>();
 
@@ -256,6 +266,21 @@ export default function SettleUpPage() {
           );
         });
       }
+    });
+
+    // Apply settlements to the balances
+    recordedSettlements.forEach((settlement) => {
+      // The person who paid (from_user_id) gets a credit
+      balanceMap.set(
+        settlement.from_user_id,
+        (balanceMap.get(settlement.from_user_id) || 0) + settlement.amount
+      );
+
+      // The person who received (to_user_id) gets a debit
+      balanceMap.set(
+        settlement.to_user_id,
+        (balanceMap.get(settlement.to_user_id) || 0) - settlement.amount
+      );
     });
 
     // Convert the map to an array of Balance objects
@@ -520,7 +545,7 @@ export default function SettleUpPage() {
                     <div className="h-8 w-8 rounded-full overflow-hidden bg-indigo-100 flex items-center justify-center mr-3 text-indigo-700 font-medium text-sm">
                       {findUserAvatar(balance.user_id) ? (
                         <Image
-                          src={findUserAvatar(balance.user_id) || ''}
+                          src={findUserAvatar(balance.user_id) || ""}
                           alt={findUserName(balance.user_id)}
                           width={32}
                           height={32}
@@ -536,14 +561,14 @@ export default function SettleUpPage() {
                   </div>
                   <span
                     className={`font-medium ${
-                      balance.amount > 0
+                      Math.abs(balance.amount) < 0.01
+                        ? "text-gray-600"
+                        : balance.amount > 0
                         ? "text-green-600"
-                        : balance.amount < 0
-                        ? "text-red-600"
-                        : "text-gray-600"
+                        : "text-red-600"
                     }`}
                   >
-                    {balance.amount === 0
+                    {Math.abs(balance.amount) < 0.01
                       ? "All settled"
                       : balance.amount > 0
                       ? `Has to receive ${formatCurrency(balance.amount)}`
@@ -586,7 +611,7 @@ export default function SettleUpPage() {
                       <div className="h-10 w-10 rounded-full overflow-hidden bg-indigo-100 flex items-center justify-center text-indigo-700 font-medium text-sm">
                         {findUserAvatar(settlement.from) ? (
                           <Image
-                            src={findUserAvatar(settlement.from) || ''}
+                            src={findUserAvatar(settlement.from) || ""}
                             alt={findUserName(settlement.from)}
                             width={40}
                             height={40}

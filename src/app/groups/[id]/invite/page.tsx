@@ -372,7 +372,7 @@ export default function InvitePage() {
                     className="flex justify-between items-center p-4 hover:bg-gray-50"
                   >
                     <div className="flex items-center">
-                      <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center mr-3 text-indigo-700 font-medium">
+                      <div className="h-10 w-10 rounded-full overflow-hidden bg-indigo-100 flex items-center justify-center mr-3 text-indigo-700 font-medium">
                         {user.avatar_url ? (
                           <Image
                             src={user.avatar_url}
@@ -389,7 +389,7 @@ export default function InvitePage() {
                         <div className="font-medium text-gray-800">
                           {user.name}
                         </div>
-                        <div className="text-sm text-gray-500">
+                        <div className="text-sm text-gray-500 truncate max-sm:max-w-[110px]">
                           {user.email}
                         </div>
                       </div>
@@ -538,7 +538,7 @@ export default function InvitePage() {
                 key={member.id}
                 className="flex items-center p-3 rounded-xl hover:bg-gray-50 transition-colors"
               >
-                <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center mr-3 text-indigo-700 font-medium">
+                <div className="h-10 w-10 rounded-full overflow-hidden bg-indigo-100 flex items-center justify-center mr-3 text-indigo-700 font-medium">
                   {member.avatar_url ? (
                     <Image
                       src={member.avatar_url}
