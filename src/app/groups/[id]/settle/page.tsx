@@ -8,6 +8,7 @@ import { supabase } from "@/utils/supabase";
 import { formatCurrency } from "@/utils/currency";
 import { User, Expense, ExpenseSplit } from "@/types";
 import toast, { Toaster } from "react-hot-toast";
+import { X } from "lucide-react";
 
 interface Settlement {
   from: string;
@@ -50,6 +51,8 @@ export default function SettleUpPage() {
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [settlingTransaction, setSettlingTransaction] = useState(false);
+  const [showQrModal, setShowQrModal] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
   useEffect(() => {
     const fetchGroupData = async () => {
@@ -102,9 +105,12 @@ export default function SettleUpPage() {
         if (groupMembersData && groupMembersData.length > 0) {
           const userIds = groupMembersData.map((member) => member.user_id);
 
+          // Force a refresh of the schema cache by using a raw query first
+          await supabase.rpc("get_schema_version");
+
           const { data: profilesData, error: profilesError } = await supabase
             .from("profiles")
-            .select("id, name, email, avatar_url")
+            .select("id, name, email, avatar_url, qr_code_url")
             .in("id", userIds);
 
           if (profilesError) throw profilesError;
@@ -159,7 +165,6 @@ export default function SettleUpPage() {
               settlementsData || []
             );
 
-            console.log("Calculated balances:", balanceArray);
             // Ensure we're not getting zero balances due to rounding issues
             const nonZeroBalances = balanceArray.map((balance) => ({
               ...balance,
@@ -351,6 +356,15 @@ export default function SettleUpPage() {
     return member?.avatar_url || null;
   };
 
+  const findUserQrCode = (userId: string) => {
+    const member = members.find((m) => m.id === userId);
+    return member?.qr_code_url || null;
+  };
+
+  const findUser = (userId: string) => {
+    return members.find((m) => m.id === userId) || null;
+  };
+
   const handleSettleTransaction = async (settlement: Settlement) => {
     if (!currentUser || !group) return;
 
@@ -368,7 +382,18 @@ export default function SettleUpPage() {
       return;
     }
 
-    // Show confirmation dialog
+    // Check if the user to pay has a QR code
+    const userToPayQrCode = findUserQrCode(settlement.to);
+    const userToPay = findUser(settlement.to);
+
+    if (userToPayQrCode && userToPay) {
+      // Show QR code modal instead of confirmation dialog
+      setSelectedUser(userToPay);
+      setShowQrModal(true);
+      return;
+    }
+
+    // If no QR code, show regular confirmation dialog
     const isConfirmed = window.confirm(
       `I confirm that I have sent ${formatCurrency(
         settlement.amount
@@ -451,10 +476,148 @@ export default function SettleUpPage() {
     );
   }
 
+  const handleConfirmPayment = async (settlement: Settlement) => {
+    if (!currentUser || !group) return;
+
+    setSettlingTransaction(true);
+    setError(null);
+    setSuccessMessage(null);
+    setShowQrModal(false);
+
+    try {
+      // Record the settlement in the database
+      const { error: settlementError } = await supabase
+        .from("settlements")
+        .insert([
+          {
+            group_id: groupId,
+            from_user_id: settlement.from,
+            to_user_id: settlement.to,
+            amount: settlement.amount,
+            settled_by: currentUser.id,
+          },
+        ]);
+
+      if (settlementError) throw settlementError;
+
+      // Update the UI to show the settlement as settled
+      const updatedSettlements = settlements.map((s) => {
+        if (
+          s.from === settlement.from &&
+          s.to === settlement.to &&
+          Math.abs(s.amount - settlement.amount) < 0.01
+        ) {
+          return {
+            ...s,
+            isSettled: true,
+            settledAt: new Date().toISOString(),
+          };
+        }
+        return s;
+      });
+
+      setSettlements(updatedSettlements);
+
+      // Show success message
+      toast.success(
+        `You have settled your debt of ${formatCurrency(
+          settlement.amount
+        )} to ${findUserName(settlement.to)}`
+      );
+
+      // Refresh the settlements data
+      const { data: settlementsData } = await supabase
+        .from("settlements")
+        .select("*")
+        .eq("group_id", groupId);
+
+      setRecordedSettlements(settlementsData || []);
+    } catch (error) {
+      console.error("Error settling transaction:", error);
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "An error occurred while settling the transaction"
+      );
+    } finally {
+      setSettlingTransaction(false);
+    }
+  };
+
   return (
     <div className="max-w-2xl mx-auto px-4 py-6">
       {/* Toast notifications */}
       <Toaster position="top-center" />
+
+      {/* QR Code Modal */}
+      {showQrModal && selectedUser && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-lg max-w-md w-full p-6 relative">
+            <button
+              onClick={() => setShowQrModal(false)}
+              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <div className="text-center mb-4">
+              <h3 className="text-xl font-semibold mb-1">Scan to Pay</h3>
+              <p className="text-gray-500 text-sm">
+                Scan {selectedUser.name}&apos;s QR code to make the payment
+              </p>
+            </div>
+
+            <div className="flex justify-center mb-6">
+              {selectedUser.qr_code_url ? (
+                <div className="border border-gray-200 rounded-lg p-2">
+                  <Image
+                    src={selectedUser.qr_code_url}
+                    alt={`${selectedUser.name}'s payment QR code`}
+                    width={250}
+                    height={250}
+                    className="object-contain"
+                  />
+                </div>
+              ) : (
+                <div className="text-center p-8 border border-gray-200 rounded-lg">
+                  <p className="text-gray-500">No QR code available</p>
+                  <p className="text-xs text-gray-400 mt-2">
+                    Ask {selectedUser.name} to upload a payment QR code in their
+                    profile
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-3 justify-center">
+              <button
+                onClick={() => {
+                  const settlement = settlements.find(
+                    (s) =>
+                      s.from === currentUser?.id &&
+                      s.to === selectedUser.id &&
+                      !s.isSettled
+                  );
+                  if (settlement) {
+                    handleConfirmPayment(settlement);
+                  }
+                }}
+                className="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg transition-colors"
+                disabled={settlingTransaction}
+              >
+                {settlingTransaction ? "Processing..." : "Confirm Payment"}
+              </button>
+              <button
+                onClick={() => setShowQrModal(false)}
+                className="border border-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-50 transition-colors"
+                disabled={settlingTransaction}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-800">

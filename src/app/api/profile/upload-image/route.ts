@@ -24,6 +24,7 @@ export async function POST(req: NextRequest) {
     // Get the form data
     const formData = await req.formData();
     const file = formData.get("file") as File;
+    const type = (formData.get("type") as string) || "avatar";
 
     if (!file) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
@@ -52,7 +53,8 @@ export async function POST(req: NextRequest) {
     // Generate a unique filename
     const fileExt = file.name.split(".").pop();
     const fileName = `${session.userId}-${Date.now()}.${fileExt}`;
-    const filePath = `avatars/${fileName}`;
+    const folder = type === "qr_code" ? "qr-codes" : "avatars";
+    const filePath = `${folder}/${fileName}`;
 
     // Upload file to Supabase Storage using admin client
     const { error: uploadError } = await supabaseAdmin.storage
@@ -74,13 +76,16 @@ export async function POST(req: NextRequest) {
 
     const avatarUrl = publicUrlData.publicUrl;
 
-    // Update the user's profile with the new avatar URL using the admin client
+    // Update the user's profile with the new URL using the admin client
     // This bypasses RLS policies since we're using the service role key
+    const updateData =
+      type === "qr_code"
+        ? { qr_code_url: avatarUrl }
+        : { avatar_url: avatarUrl };
+
     const { data, error: updateError } = await supabaseAdmin
       .from("profiles")
-      .update({
-        avatar_url: avatarUrl,
-      })
+      .update(updateData)
       .eq("id", session.userId)
       .select()
       .single();
@@ -94,6 +99,7 @@ export async function POST(req: NextRequest) {
       success: true,
       user: data,
       avatarUrl,
+      type,
     });
   } catch (error) {
     console.error("Unexpected profile image upload error:", error);

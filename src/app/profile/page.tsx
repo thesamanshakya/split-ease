@@ -17,7 +17,9 @@ export default function ProfilePage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [qrPreviewUrl, setQrPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const qrFileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -103,14 +105,34 @@ export default function ProfilePage() {
     }
   };
 
+  const handleQrFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Create a preview URL
+      const url = URL.createObjectURL(file);
+      setQrPreviewUrl(url);
+    }
+  };
+
   const handleUploadClick = () => {
     fileInputRef.current?.click();
+  };
+
+  const handleQrUploadClick = () => {
+    qrFileInputRef.current?.click();
   };
 
   const handleCancelUpload = () => {
     setPreviewUrl(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
+    }
+  };
+
+  const handleCancelQrUpload = () => {
+    setQrPreviewUrl(null);
+    if (qrFileInputRef.current) {
+      qrFileInputRef.current.value = "";
     }
   };
 
@@ -146,6 +168,45 @@ export default function ProfilePage() {
       console.error("Error uploading image:", error);
       toast.error(
         error instanceof Error ? error.message : "Failed to upload image"
+      );
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleUploadQrCode = async () => {
+    if (!qrFileInputRef.current?.files?.[0]) {
+      return;
+    }
+
+    setUploading(true);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", qrFileInputRef.current.files[0]);
+      formData.append("type", "qr_code");
+
+      const response = await fetch("/api/profile/upload-image", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to upload QR code");
+      }
+
+      setUser(data.user);
+      setQrPreviewUrl(null);
+      if (qrFileInputRef.current) {
+        qrFileInputRef.current.value = "";
+      }
+      toast.success("Payment QR code updated successfully");
+    } catch (error) {
+      console.error("Error uploading QR code:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Failed to upload QR code"
       );
     } finally {
       setUploading(false);
@@ -204,6 +265,14 @@ export default function ProfilePage() {
               type="file"
               ref={fileInputRef}
               onChange={handleFileChange}
+              accept="image/*"
+              className="hidden"
+            />
+
+            <input
+              type="file"
+              ref={qrFileInputRef}
+              onChange={handleQrFileChange}
               accept="image/*"
               className="hidden"
             />
@@ -288,6 +357,81 @@ export default function ProfilePage() {
               )}
             </Button>
           </form>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+        <h2 className="text-xl font-semibold mb-4">Payment QR Code</h2>
+        <div className="flex flex-col items-center mb-4">
+          <div className="relative mb-4">
+            <div className="h-48 w-48 bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold overflow-hidden border border-gray-200 rounded-lg">
+              {qrPreviewUrl ? (
+                <Image
+                  src={qrPreviewUrl}
+                  alt="QR Code Preview"
+                  width={192}
+                  height={192}
+                  className="object-cover w-full h-full"
+                />
+              ) : user?.qr_code_url ? (
+                <Image
+                  src={user.qr_code_url}
+                  alt="Payment QR Code"
+                  width={192}
+                  height={192}
+                  className="object-cover w-full h-full"
+                />
+              ) : (
+                <div className="text-center p-4">
+                  <p className="text-sm text-gray-500">No QR code uploaded</p>
+                  <p className="text-xs text-gray-400 mt-2">
+                    Upload your payment QR code to make settling up easier
+                  </p>
+                </div>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={handleQrUploadClick}
+              className="absolute bottom-0 right-0 bg-indigo-600 text-white p-2 rounded-full hover:bg-indigo-700 transition-colors"
+              disabled={uploading}
+            >
+              <Camera className="h-5 w-5" />
+            </button>
+          </div>
+
+          {qrPreviewUrl && (
+            <div className="flex gap-2 mt-2">
+              <Button
+                type="button"
+                onClick={handleUploadQrCode}
+                disabled={uploading}
+                className="bg-indigo-600 hover:bg-indigo-700"
+                size="sm"
+              >
+                {uploading ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                ) : (
+                  <Check className="h-4 w-4 mr-1" />
+                )}
+                Save
+              </Button>
+              <Button
+                type="button"
+                onClick={handleCancelQrUpload}
+                variant="outline"
+                size="sm"
+                disabled={uploading}
+              >
+                <X className="h-4 w-4 mr-1" />
+                Cancel
+              </Button>
+            </div>
+          )}
+          <p className="text-sm text-gray-500 mt-4 text-center max-w-md">
+            Upload your payment QR code (like eSewa, Khalti, Bank Account, etc.)
+            to make it easier for others to pay you when settling up expenses.
+          </p>
         </div>
       </div>
 

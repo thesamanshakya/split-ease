@@ -3,6 +3,7 @@ export interface User {
   email: string;
   name: string;
   avatar_url?: string;
+  qr_code_url?: string;
 }
 
 export interface Group {

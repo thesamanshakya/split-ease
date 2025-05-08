@@ -21,10 +21,8 @@ async function generateIcons() {
       await sharp(sourceImage)
         .resize(size, size)
         .toFile(path.join(iconsDir, `icon-${size}x${size}.png`));
-      
-      console.log(`Generated icon-${size}x${size}.png`);
+
     }
-    console.log('All icons generated successfully!');
   } catch (error) {
     console.error('Error generating icons:', error);
   }

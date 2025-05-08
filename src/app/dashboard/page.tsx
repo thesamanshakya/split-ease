@@ -38,7 +38,9 @@ export default function Dashboard() {
   const [chartData, setChartData] = useState<
     { category: string; amount: number }[]
   >([]);
-  const [groupBalances, setGroupBalances] = useState<Record<string, number>>({});
+  const [groupBalances, setGroupBalances] = useState<Record<string, number>>(
+    {}
+  );
 
   // Function to calculate balances from expenses, members, expense splits, and settlements
   const calculateAggregatedBalances = (
@@ -121,30 +123,34 @@ export default function Dashboard() {
     allUsers: Record<string, User>
   ): Record<string, number> => {
     const groupBalances: Record<string, number> = {};
-    
+
     // Initialize balances for all groups
-    groups.forEach(group => {
+    groups.forEach((group) => {
       groupBalances[group.id] = 0;
     });
-    
+
     // Process each group separately
-    groups.forEach(group => {
+    groups.forEach((group) => {
       // Filter data for this group
-      const groupExpenses = allExpenses.filter(expense => expense.group_id === group.id);
-      const groupSettlements = allSettlements.filter(settlement => settlement.group_id === group.id);
-      
+      const groupExpenses = allExpenses.filter(
+        (expense) => expense.group_id === group.id
+      );
+      const groupSettlements = allSettlements.filter(
+        (settlement) => settlement.group_id === group.id
+      );
+
       // Get all expense IDs for this group
-      const expenseIds = groupExpenses.map(expense => expense.id);
-      
+      const expenseIds = groupExpenses.map((expense) => expense.id);
+
       // Filter expense splits for this group's expenses
-      const groupExpenseSplits = allExpenseSplits.filter(split => 
+      const groupExpenseSplits = allExpenseSplits.filter((split) =>
         expenseIds.includes(split.expense_id)
       );
-      
+
       // Get all user IDs in this group
       const userIds = Object.keys(allUsers);
-      const groupMembers = userIds.map(id => allUsers[id]);
-      
+      const groupMembers = userIds.map((id) => allUsers[id]);
+
       // Calculate balances for this group
       const balances = calculateAggregatedBalances(
         groupMembers,
@@ -152,14 +158,16 @@ export default function Dashboard() {
         groupExpenseSplits,
         groupSettlements
       );
-      
+
       // Find the current user's balance in this group
-      const userBalance = balances.find(balance => balance.user_id === userId);
+      const userBalance = balances.find(
+        (balance) => balance.user_id === userId
+      );
       if (userBalance) {
         groupBalances[group.id] = userBalance.amount;
       }
     });
-    
+
     return groupBalances;
   };
 
@@ -296,11 +304,6 @@ export default function Dashboard() {
 
               // Process chart data
               if (allExpensesArray.length > 0) {
-                console.log(
-                  "Setting up chart data from",
-                  allExpensesArray.length,
-                  "expenses"
-                );
                 const categoryMap = new Map<string, number>();
 
                 allExpensesArray.forEach((expense) => {
@@ -320,7 +323,6 @@ export default function Dashboard() {
                   .sort((a, b) => b.amount - a.amount)
                   .slice(0, 8);
 
-                console.log("Setting chart data:", processedData);
                 setChartData(processedData);
               }
 
@@ -333,8 +335,6 @@ export default function Dashboard() {
                   allExpenseSplitsData,
                   allSettlementsData || []
                 );
-
-                console.log(balances, ".........++++++");
 
                 setAggregatedBalances(balances);
 
@@ -363,7 +363,7 @@ export default function Dashboard() {
                   setTotalToPay(0);
                   setTotalToReceive(0);
                 }
-                
+
                 // Calculate balances per group
                 const perGroupBalances = calculateGroupBalances(
                   userId,
@@ -373,7 +373,7 @@ export default function Dashboard() {
                   allSettlementsData || [],
                   usersMap
                 );
-                
+
                 setGroupBalances(perGroupBalances);
               }
 
@@ -526,17 +526,23 @@ export default function Dashboard() {
                     <span className="font-medium">{group.name}</span>
                     <div className="flex items-center">
                       {groupBalances[group.id] !== undefined && (
-                        <span className={`mr-2 text-sm font-medium ${
-                          groupBalances[group.id] < 0 
-                            ? 'text-red-600' 
-                            : groupBalances[group.id] > 0 
-                            ? 'text-green-600' 
-                            : 'text-gray-600'
-                        }`}>
-                          {groupBalances[group.id] < 0 
-                            ? `Has to pay ${formatCurrency(Math.abs(groupBalances[group.id]))}`
-                            : groupBalances[group.id] > 0 
-                            ? `Has to receive ${formatCurrency(groupBalances[group.id])}` 
+                        <span
+                          className={`mr-2 text-sm font-medium ${
+                            groupBalances[group.id] < 0
+                              ? "text-red-600"
+                              : groupBalances[group.id] > 0
+                              ? "text-green-600"
+                              : "text-gray-600"
+                          }`}
+                        >
+                          {groupBalances[group.id] < 0
+                            ? `Has to pay ${formatCurrency(
+                                Math.abs(groupBalances[group.id])
+                              )}`
+                            : groupBalances[group.id] > 0
+                            ? `Has to receive ${formatCurrency(
+                                groupBalances[group.id]
+                              )}`
                             : "All settled"}
                         </span>
                       )}
