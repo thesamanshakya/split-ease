@@ -534,10 +534,10 @@ export default function Dashboard() {
                             : 'text-gray-600'
                         }`}>
                           {groupBalances[group.id] < 0 
-                            ? `You owe ${formatCurrency(Math.abs(groupBalances[group.id]))}`
+                            ? `Has to pay ${formatCurrency(Math.abs(groupBalances[group.id]))}`
                             : groupBalances[group.id] > 0 
-                            ? `You get ${formatCurrency(groupBalances[group.id])}` 
-                            : "Settled up"}
+                            ? `Has to receive ${formatCurrency(groupBalances[group.id])}` 
+                            : "All settled"}
                         </span>
                       )}
                       <svg
