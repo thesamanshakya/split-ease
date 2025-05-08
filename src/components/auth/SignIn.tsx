@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "react-hot-toast";
 
@@ -10,7 +10,6 @@ export default function SignIn() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
-  const searchParams = useSearchParams();
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,24 +60,37 @@ export default function SignIn() {
     }
   };
 
-  useEffect(() => {
-    // Check if this is a verification redirect
-    const verification = searchParams.get("verification");
-    
-    if (verification === "success") {
-      // Show success message
-      toast.success("Email verified successfully! Please log in to continue.", {
-        duration: 5000,
-        style: {
-          background: "#333",
-          color: "#fff",
-        },
-      });
-    }
-  }, [searchParams]);
+  // Move the verification check to a separate component
+  const VerificationCheck = () => {
+    const searchParams = useSearchParams();
+
+    useEffect(() => {
+      // Check if this is a verification redirect
+      const verification = searchParams.get("verification");
+
+      if (verification === "success") {
+        // Show success message
+        toast.success(
+          "Email verified successfully! Please log in to continue.",
+          {
+            duration: 5000,
+            style: {
+              background: "#333",
+              color: "#fff",
+            },
+          }
+        );
+      }
+    }, [searchParams]);
+
+    return null;
+  };
 
   return (
     <div>
+      <Suspense fallback={null}>
+        <VerificationCheck />
+      </Suspense>
       <h2 className="text-2xl font-bold mb-6">Sign In</h2>
 
       {error && (
