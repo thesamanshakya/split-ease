@@ -519,7 +519,7 @@ export default function NewExpensePage() {
                     >
                       <div className="flex items-center md:w-1/2 mb-2 md:mb-0">
                         <div
-                          className={`h-8 w-8 rounded-full flex items-center justify-center mr-3 text-sm ${
+                          className={`h-8 w-8 rounded-full overflow-hidden flex items-center justify-center mr-3 text-sm ${
                             split.included
                               ? "bg-indigo-100 text-indigo-700"
                               : "bg-gray-200 text-gray-500"
@@ -673,7 +673,7 @@ export default function NewExpensePage() {
                     >
                       <div className="flex items-center">
                         <div
-                          className={`h-8 w-8 rounded-full flex items-center justify-center mr-3 text-sm ${
+                          className={`h-8 w-8 rounded-full overflow-hidden flex items-center justify-center mr-3 text-sm ${
                             split.included
                               ? "bg-indigo-100 text-indigo-700"
                               : "bg-gray-200 text-gray-500"

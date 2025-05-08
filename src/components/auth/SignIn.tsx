@@ -23,6 +23,10 @@ export default function SignIn() {
         credentials: "include", // Important: This ensures cookies are sent with the request
         headers: {
           "Content-Type": "application/json",
+          // Add cache control headers to prevent caching
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          "Pragma": "no-cache",
+          "Expires": "0"
         },
         body: JSON.stringify({ email, password }),
       });
@@ -34,16 +38,50 @@ export default function SignIn() {
       }
 
       if (data.success) {
+        // Clear any previous auth errors
+        setError(null);
+        
         // Trigger a storage event for cross-tab synchronization
         localStorage.setItem("auth-state-change", Date.now().toString());
+        
+        // Show success message
+        toast.success("Signed in successfully!", {
+          duration: 3000,
+          style: {
+            background: "#333",
+            color: "#fff",
+          },
+        });
 
         // Force a refresh to ensure the middleware picks up the session
         router.refresh();
 
         // Add a small delay to ensure the session is properly set
         setTimeout(() => {
-          // Navigate to dashboard
-          router.push("/dashboard");
+          // Verify session is active before redirecting
+          fetch("/api/auth/session", {
+            method: "GET",
+            credentials: "include",
+            headers: {
+              "Cache-Control": "no-cache, no-store, must-revalidate",
+              "Pragma": "no-cache",
+              "Expires": "0"
+            }
+          })
+            .then(res => res.json())
+            .then(sessionData => {
+              if (sessionData.isLoggedIn) {
+                // Navigate to dashboard
+                router.push("/dashboard");
+              } else {
+                throw new Error("Session verification failed");
+              }
+            })
+            .catch(err => {
+              console.error("Session verification error:", err);
+              setError("Login successful but session verification failed. Please try again.");
+              setLoading(false);
+            });
         }, 500);
       } else {
         throw new Error("Failed to establish session");
@@ -55,7 +93,6 @@ export default function SignIn() {
           ? error.message
           : "An error occurred during sign in";
       setError(errorMessage);
-    } finally {
       setLoading(false);
     }
   };

@@ -88,6 +88,12 @@ export default function Header() {
       const response = await fetch("/api/auth/logout", {
         method: "POST",
         credentials: "include", // Important: This ensures cookies are sent with the request
+        headers: {
+          // Add cache control headers to prevent caching
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          "Pragma": "no-cache",
+          "Expires": "0"
+        },
       });
 
       const data = await response.json();
@@ -100,20 +106,42 @@ export default function Header() {
         toast.success("Signed out successfully!");
         setUser(null);
 
+        // Clear any auth-related items from localStorage
+        localStorage.removeItem("sb-auth-token");
+        localStorage.removeItem("supabase.auth.token");
+        
+        // Clear any auth-related cookies
+        document.cookie = "sb-auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax; secure";
+        document.cookie = "splitease_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax; secure";
+
         // Trigger a storage event for cross-tab synchronization
         localStorage.setItem("auth-state-change", Date.now().toString());
 
         // Force a refresh to ensure the middleware picks up the session change
         router.refresh();
 
-        // Navigate to auth page
-        router.push("/auth");
+        // Add a small delay before redirecting
+        setTimeout(() => {
+          // Navigate to auth page
+          router.push("/auth");
+        }, 300);
       } else {
         throw new Error("Failed to sign out");
       }
     } catch (error) {
       console.error("Sign out exception:", error);
       toast.error("An unexpected error occurred during sign out.");
+      
+      // Attempt to clear session data anyway in case of API failure
+      localStorage.removeItem("sb-auth-token");
+      localStorage.removeItem("supabase.auth.token");
+      document.cookie = "sb-auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax; secure";
+      document.cookie = "splitease_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax; secure";
+      
+      // Redirect to auth page after a short delay
+      setTimeout(() => {
+        router.push("/auth");
+      }, 1000);
     }
   };
 
