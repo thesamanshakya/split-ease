@@ -68,7 +68,15 @@ export default function SignIn() {
       // Check if this is a verification redirect
       const verification = searchParams.get("verification");
 
-      if (verification === "success") {
+      // Use localStorage to ensure we only show the toast once per session
+      const hasShownVerificationToast = localStorage.getItem(
+        "verification_toast_shown"
+      );
+
+      if (verification === "success" && !hasShownVerificationToast) {
+        // Set flag to prevent showing the toast multiple times
+        localStorage.setItem("verification_toast_shown", "true");
+
         // Show success message
         toast.success(
           "Email verified successfully! Please log in to continue.",
@@ -78,8 +86,14 @@ export default function SignIn() {
               background: "#333",
               color: "#fff",
             },
+            id: "verification-success", // Add an ID to prevent duplicate toasts
           }
         );
+
+        // Clear the flag after some time (e.g., 1 minute)
+        setTimeout(() => {
+          localStorage.removeItem("verification_toast_shown");
+        }, 60000);
       }
     }, [searchParams]);
 
