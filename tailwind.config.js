@@ -16,6 +16,10 @@ module.exports = {
         "2xl": "1400px",
       },
     },
+    fontFamily: {
+      sans: ["var(--font-roboto)", "sans-serif"],
+      heading: ["var(--font-roboto-slab)", "serif"],
+    },
     extend: {
       colors: {
         border: "var(--border)",

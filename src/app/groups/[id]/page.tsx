@@ -291,6 +291,11 @@ export default function GroupPage() {
     return member ? member.name : "Unknown User";
   };
 
+  const findUserAvatar = (userId: string) => {
+    const member = members.find((m) => m.id === userId);
+    return member?.avatar_url || null;
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
@@ -431,15 +436,28 @@ export default function GroupPage() {
                   >
                     <div className="flex justify-between items-start">
                       <div className="flex items-center">
-                        <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center mr-3 text-indigo-700 font-medium text-sm">
-                          {findUserName(balance.user_id).charAt(0)}
+                        <div className="h-8 w-8 rounded-full overflow-hidden bg-indigo-100 flex items-center justify-center mr-3 text-indigo-700 font-medium text-sm">
+                          {findUserAvatar(balance.user_id) ? (
+                            <Image
+                              src={findUserAvatar(balance.user_id) || ""}
+                              alt={findUserName(balance.user_id)}
+                              width={32}
+                              height={32}
+                              className="rounded-full"
+                            />
+                          ) : (
+                            findUserName(balance.user_id).charAt(0)
+                          )}
                         </div>
-                        <span className="font-medium text-gray-800 truncate">
+                        <span
+                          title={findUserName(balance.user_id)}
+                          className="font-medium text-gray-800 truncate max-w-[130px]"
+                        >
                           {findUserName(balance.user_id)}
                         </span>
                       </div>
                       <div
-                        className={`font-medium text-right ml-2 ${
+                        className={`font-medium text-right ml-2 text-sm ${
                           balance.amount === 0
                             ? "text-gray-600"
                             : balance.amount > 0
@@ -516,7 +534,7 @@ export default function GroupPage() {
               className="flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 transition-colors"
             >
               <div className="flex items-center">
-                <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center mr-3 text-indigo-700 font-medium">
+                <div className="h-10 w-10 rounded-full overflow-hidden bg-indigo-100 flex items-center justify-center mr-3 text-indigo-700 font-medium">
                   {member.avatar_url ? (
                     <Image
                       src={member.avatar_url}

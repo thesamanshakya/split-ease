@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { supabase } from "@/utils/supabase";
 import { formatCurrency } from "@/utils/currency";
 import { User, Expense, ExpenseSplit } from "@/types";
@@ -320,6 +321,11 @@ export default function SettleUpPage() {
     return member ? member.name : "Unknown User";
   };
 
+  const findUserAvatar = (userId: string) => {
+    const member = members.find((m) => m.id === userId);
+    return member?.avatar_url || null;
+  };
+
   const handleSettleTransaction = async (settlement: Settlement) => {
     if (!currentUser || !group) return;
 
@@ -511,8 +517,18 @@ export default function SettleUpPage() {
               >
                 <div className="flex justify-between items-center">
                   <div className="flex items-center">
-                    <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center mr-3 text-indigo-700 font-medium text-sm">
-                      {findUserName(balance.user_id).charAt(0)}
+                    <div className="h-8 w-8 rounded-full overflow-hidden bg-indigo-100 flex items-center justify-center mr-3 text-indigo-700 font-medium text-sm">
+                      {findUserAvatar(balance.user_id) ? (
+                        <Image
+                          src={findUserAvatar(balance.user_id) || ''}
+                          alt={findUserName(balance.user_id)}
+                          width={32}
+                          height={32}
+                          className="rounded-full"
+                        />
+                      ) : (
+                        findUserName(balance.user_id).charAt(0)
+                      )}
                     </div>
                     <span className="font-medium text-gray-800">
                       {findUserName(balance.user_id)}
@@ -567,8 +583,18 @@ export default function SettleUpPage() {
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-medium text-sm">
-                        {findUserName(settlement.from).charAt(0)}
+                      <div className="h-10 w-10 rounded-full overflow-hidden bg-indigo-100 flex items-center justify-center text-indigo-700 font-medium text-sm">
+                        {findUserAvatar(settlement.from) ? (
+                          <Image
+                            src={findUserAvatar(settlement.from) || ''}
+                            alt={findUserName(settlement.from)}
+                            width={40}
+                            height={40}
+                            className="rounded-full"
+                          />
+                        ) : (
+                          findUserName(settlement.from).charAt(0)
+                        )}
                       </div>
                       <div className="flex flex-col">
                         <p className="font-medium text-gray-800">

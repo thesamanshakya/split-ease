@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   ArrowRight,
   CreditCard,
@@ -19,7 +19,7 @@ export default function LandingPage() {
         <div className="flex items-center justify-center rounded-full bg-indigo-100 px-4 py-1 text-sm text-indigo-700 mb-4">
           <span>Splitting bills has never been easier</span>
         </div>
-        <h1 className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl">
+        <h1 className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl font-heading">
           Split Bills Easily with{" "}
           <span className="text-indigo-600">SplitEase</span>
         </h1>
@@ -52,7 +52,7 @@ export default function LandingPage() {
       <section id="how-it-works" className="bg-slate-50 py-12 md:py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col items-center text-center mb-6 md:mb-8">
-            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl mb-4">
+            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl mb-4 font-heading">
               How It Works
             </h2>
             <p className="max-w-[700px] text-muted-foreground">
@@ -82,15 +82,20 @@ export default function LandingPage() {
                 icon: <Wallet className="h-10 w-10 text-indigo-600" />,
               },
             ].map((item) => (
-              <Card key={item.step} className="border-none shadow-sm">
-                <CardContent className="flex flex-col items-center text-center pt-6">
-                  <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-indigo-100">
+              <Card
+                key={item.step}
+                className="border border-gray-100 shadow-sm hover:shadow transition-all"
+              >
+                <CardContent className="flex flex-col items-center text-center">
+                  <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-indigo-100 mt-6">
                     {item.icon}
                   </div>
                   <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-full bg-indigo-600 text-white font-bold">
                     {item.step}
                   </div>
-                  <h3 className="mt-4 font-semibold">{item.title}</h3>
+                  <h3 className="mt-4 font-semibold font-heading">
+                    {item.title}
+                  </h3>
                 </CardContent>
               </Card>
             ))}
@@ -102,7 +107,7 @@ export default function LandingPage() {
       <section id="features" className="py-12 md:py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col items-center text-center mb-6 md:mb-8">
-            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl mb-4">
+            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl mb-4 font-heading">
               Features
             </h2>
             <p className="max-w-[700px] text-muted-foreground">
@@ -145,14 +150,17 @@ export default function LandingPage() {
                 icon: <ArrowRight className="h-6 w-6 text-indigo-600" />,
               },
             ].map((feature, index) => (
-              <Card key={index} className="hover:shadow-sm transition-shadow">
-                <CardContent>
+              <Card
+                key={index}
+                className="hover:shadow transition-all border border-gray-100"
+              >
+                <CardHeader>
                   <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-md bg-indigo-100">
                     {feature.icon}
                   </div>
-                  <h3 className="text-xl font-semibold mb-2">
-                    {feature.title}
-                  </h3>
+                  <CardTitle className="text-xl">{feature.title}</CardTitle>
+                </CardHeader>
+                <CardContent>
                   <p className="text-muted-foreground">{feature.description}</p>
                 </CardContent>
               </Card>
@@ -164,7 +172,7 @@ export default function LandingPage() {
       {/* CTA Section */}
       <section className="bg-indigo-600 py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center text-center">
-          <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl mb-4">
+          <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl mb-4 font-heading">
             Ready to split bills without the drama?
           </h2>
           <p className="max-w-[700px] text-indigo-50 mb-8">

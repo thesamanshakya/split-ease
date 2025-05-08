@@ -481,7 +481,7 @@ export default function Dashboard() {
           </h2>
 
           {activities.length > 0 ? (
-            <div className="space-y-3">
+            <div className="space-y-2.5 overflow-y-auto max-h-96">
               {activities.map((activity) => (
                 <Link
                   key={activity.id}

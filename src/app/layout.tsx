@@ -1,9 +1,19 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Roboto, Roboto_Slab } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/layout/Header";
 
-const inter = Inter({ subsets: ["latin"] });
+const roboto = Roboto({ 
+  weight: ['400', '500', '700'],
+  subsets: ["latin"],
+  variable: '--font-roboto',
+});
+
+const robotoSlab = Roboto_Slab({
+  weight: ['400', '500', '600', '700'],
+  subsets: ["latin"],
+  variable: '--font-roboto-slab',
+});
 
 export const metadata: Metadata = {
   title: "SplitEase - Split Bills Easily",
@@ -17,7 +27,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${inter.className} bg-gray-50 min-h-screen`}>
+      <body className={`${roboto.variable} ${robotoSlab.variable} font-sans bg-gray-50 min-h-screen`}>
         <Header />
         <main className="px-5 py-8">{children}</main>
       </body>
