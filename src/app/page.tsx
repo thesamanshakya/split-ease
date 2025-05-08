@@ -23,7 +23,9 @@ export default function LandingPage() {
         </div>
         <h1 className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl font-heading">
           Split Bills Easily with{" "}
-          <span className="text-indigo-600">SplitEase</span>
+          <span>
+            <span className="text-indigo-600">Split</span>Ease
+          </span>
         </h1>
         <p className="max-w-[700px] text-lg text-muted-foreground md:text-xl">
           The easiest way to split bills with friends, track expenses, and

@@ -11,7 +11,9 @@ export function Logo({ className, iconClassName, textClassName }: LogoProps) {
   return (
     <Link href="/" className={`flex items-center gap-2 ${className || ""}`}>
       <Share2 className={`h-6 w-6 text-indigo-600 ${iconClassName || ""}`} />
-      <span className={`font-bold ${textClassName || ""}`}>SplitEase</span>
+      <span className={`font-heading font-bold ${textClassName || ""}`}>
+        <span className="text-indigo-600">Split</span>Ease
+      </span>
     </Link>
   );
 }

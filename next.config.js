@@ -12,6 +12,11 @@ const nextConfig = {
       },
     ],
   },
+  // PWA configuration
+  webpack: (config) => {
+    // Add support for PWA
+    return config;
+  },
 };
 
 module.exports = nextConfig;
