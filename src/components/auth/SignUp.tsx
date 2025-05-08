@@ -20,6 +20,16 @@ export default function SignUp() {
     setShowSuccessMessage(false);
 
     try {
+      // Get the base URL for redirects
+      const getRedirectURL = () => {
+        // In production, use the site URL
+        if (typeof window !== 'undefined' && window.location.hostname !== 'localhost') {
+          return `${window.location.origin}/auth?verification=success`;
+        }
+        // In development, use localhost
+        return 'http://localhost:3000/auth?verification=success';
+      };
+
       // Sign up the user
       const { error: authError } = await supabase.auth.signUp({
         email,
@@ -28,6 +38,8 @@ export default function SignUp() {
           data: {
             name,
           },
+          // Add the redirectTo parameter to specify where to redirect after email confirmation
+          emailRedirectTo: getRedirectURL(),
         },
       });
 
