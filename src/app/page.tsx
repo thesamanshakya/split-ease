@@ -10,10 +10,14 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { Logo } from "@/components/ui/logo";
+import VerificationHandler from "@/components/auth/VerificationHandler";
+import { Toaster } from "react-hot-toast";
 
 export default function LandingPage() {
   return (
     <div className="flex min-h-screen flex-col -mx-5">
+      <Toaster position="top-center" />
+      <VerificationHandler />
       {/* Hero Section */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center gap-6 pt-20 md:pt-32 text-center">
         <div className="flex items-center justify-center rounded-full bg-indigo-100 px-4 py-1 text-sm text-indigo-700 mb-4">
