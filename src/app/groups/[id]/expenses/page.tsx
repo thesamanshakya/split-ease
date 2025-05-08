@@ -14,6 +14,7 @@ export default function GroupExpensesPage() {
 
   const [group, setGroup] = useState<{ id: string; name: string } | null>(null);
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [filteredExpenses, setFilteredExpenses] = useState<Expense[]>([]);
   const [members, setMembers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -93,36 +94,58 @@ export default function GroupExpensesPage() {
     fetchGroupData();
   }, [groupId, router]);
 
+  // Apply filters locally instead of refetching from the database
+  useEffect(() => {
+    if (expenses.length > 0) {
+      applyFilters();
+    }
+  }, [filterPaidBy, expenses, sortOrder]);
+
   const fetchExpenses = async () => {
     try {
-      let query = supabase
+      // Always fetch all expenses for the group without filtering
+      const { data, error } = await supabase
         .from("expenses")
         .select("*")
         .eq("group_id", groupId)
         .order("date", { ascending: sortOrder === "asc" });
 
-      if (filterPaidBy) {
-        query = query.eq("paid_by", filterPaidBy);
-      }
-
-      const { data, error } = await query;
-
       if (error) throw error;
       setExpenses(data || []);
+      // Initial filtering will be applied by the useEffect
     } catch (error: any) {
       console.error("Error fetching expenses:", error);
       setError(error.message || "An error occurred while loading the expenses");
     }
   };
 
-  const handleSortOrderChange = async (order: "desc" | "asc") => {
-    setSortOrder(order);
-    await fetchExpenses();
+  // Apply filters locally instead of making database queries
+  const applyFilters = () => {
+    let result = [...expenses];
+    
+    // Sort the expenses
+    result.sort((a, b) => {
+      const dateA = new Date(a.date).getTime();
+      const dateB = new Date(b.date).getTime();
+      return sortOrder === "asc" ? dateA - dateB : dateB - dateA;
+    });
+    
+    // Filter by paid_by if a filter is selected
+    if (filterPaidBy) {
+      result = result.filter(expense => expense.paid_by === filterPaidBy);
+    }
+    
+    setFilteredExpenses(result);
   };
 
-  const handleFilterChange = async (userId: string) => {
+  const handleSortOrderChange = (order: "desc" | "asc") => {
+    setSortOrder(order);
+    // Filtering will be applied by the useEffect
+  };
+
+  const handleFilterChange = (userId: string) => {
     setFilterPaidBy(userId);
-    await fetchExpenses();
+    // Filtering will be applied by the useEffect
   };
 
   const findUserName = (userId: string) => {
@@ -155,7 +178,7 @@ export default function GroupExpensesPage() {
             <span className="text-gray-500 font-normal">• Expenses</span>
           </h1>
           <p className="text-gray-500">
-            {expenses.length} {expenses.length === 1 ? "expense" : "expenses"}
+            {filteredExpenses.length} {filteredExpenses.length === 1 ? "expense" : "expenses"}
           </p>
         </div>
         <Link
@@ -252,9 +275,9 @@ export default function GroupExpensesPage() {
           </div>
         </div>
 
-        {expenses.length > 0 ? (
+        {filteredExpenses.length > 0 ? (
           <div className="space-y-3">
-            {expenses.map((expense) => (
+            {filteredExpenses.map((expense) => (
               <div
                 key={expense.id}
                 className="p-4 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors"

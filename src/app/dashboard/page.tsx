@@ -13,6 +13,15 @@ import {
   ExpenseSplit,
   Balance,
 } from "@/types";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 
 export default function Dashboard() {
   const [user, setUser] = useState<User | null>(null);
@@ -26,6 +35,9 @@ export default function Dashboard() {
   const [aggregatedBalances, setAggregatedBalances] = useState<Balance[]>([]);
   const [totalToPay, setTotalToPay] = useState<number>(0);
   const [totalToReceive, setTotalToReceive] = useState<number>(0);
+  const [chartData, setChartData] = useState<
+    { category: string; amount: number }[]
+  >([]);
 
   // Function to calculate balances from expenses, members, expense splits, and settlements
   const calculateAggregatedBalances = (
@@ -224,9 +236,40 @@ export default function Dashboard() {
                 .in("group_id", groupIds);
 
               // Store all data
-              setAllExpenses(allExpensesData || []);
+              const allExpensesArray = allExpensesData || [];
+              setAllExpenses(allExpensesArray);
               setAllExpenseSplits(allExpenseSplitsData || []);
               setAllSettlements(allSettlementsData || []);
+
+              // Process chart data
+              if (allExpensesArray.length > 0) {
+                console.log(
+                  "Setting up chart data from",
+                  allExpensesArray.length,
+                  "expenses"
+                );
+                const categoryMap = new Map<string, number>();
+
+                allExpensesArray.forEach((expense) => {
+                  const expenseCategory = expense.description || "Other";
+                  const current = categoryMap.get(expenseCategory) || 0;
+                  categoryMap.set(expenseCategory, current + expense.amount);
+                });
+
+                const processedData = Array.from(categoryMap)
+                  .map(([category, amount]) => ({
+                    category:
+                      category.length > 15
+                        ? category.substring(0, 15) + "..."
+                        : category,
+                    amount: Math.round(amount),
+                  }))
+                  .sort((a, b) => b.amount - a.amount)
+                  .slice(0, 8);
+
+                console.log("Setting chart data:", processedData);
+                setChartData(processedData);
+              }
 
               // Calculate aggregated balances
               if (allExpensesData && Object.keys(usersMap).length > 0) {
@@ -545,6 +588,111 @@ export default function Dashboard() {
         </div>
       </div>
 
+      <section className="bg-white p-6 rounded-lg shadow-md mb-8">
+        <div className="md:flex justify-between items-center mb-6">
+          <h2 className="text-xl font-semibold flex items-center">
+            <svg
+              className="h-5 w-5 mr-2 text-indigo-600"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+              />
+            </svg>
+            Expense Analytics
+          </h2>
+          <div className="text-sm text-gray-500">Top 8 expense categories</div>
+        </div>
+
+        {chartData.length > 0 ? (
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={chartData}
+                margin={{ top: 20, right: 30, left: 40, bottom: 60 }}
+                barSize={40}
+                barGap={8}
+              >
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  horizontal={true}
+                  vertical={false}
+                  stroke="#e5e7eb"
+                />
+                <XAxis
+                  dataKey="category"
+                  tick={{ fontSize: 12, fill: "#4b5563" }}
+                  angle={-45}
+                  textAnchor="end"
+                  tickMargin={10}
+                  axisLine={{ stroke: "#e5e7eb" }}
+                  height={60}
+                />
+                <YAxis
+                  tickFormatter={(value) => formatCurrency(value)}
+                  tick={{ fontSize: 12, fill: "#4b5563" }}
+                  axisLine={{ stroke: "#e5e7eb" }}
+                  tickLine={{ stroke: "#e5e7eb" }}
+                  domain={[0, "dataMax + 1000"]}
+                  width={70}
+                />
+                <Tooltip
+                  formatter={(value: number) => [
+                    formatCurrency(value),
+                    "Total Spent",
+                  ]}
+                  labelFormatter={(label) => `Category: ${label}`}
+                  contentStyle={{
+                    backgroundColor: "#fff",
+                    border: "none",
+                    borderRadius: "8px",
+                    boxShadow:
+                      "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+                    padding: "10px 14px",
+                    fontSize: "12px",
+                  }}
+                  cursor={{ fill: "rgba(79, 70, 229, 0.1)" }}
+                  active={true}
+                />
+                <Bar
+                  dataKey="amount"
+                  fill="#4f46e5"
+                  radius={[4, 4, 0, 0]}
+                  name="Total Spent"
+                  isAnimationActive={false}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        ) : (
+          <div className="h-60 flex flex-col items-center justify-center text-gray-500 bg-gray-50 rounded-lg">
+            <svg
+              className="h-12 w-12 mb-3 text-gray-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+              />
+            </svg>
+            <p className="text-center">
+              No expense data available yet.
+              <br />
+              Add expenses to see analytics.
+            </p>
+          </div>
+        )}
+      </section>
+
       {/* Payment Summary Section */}
       <div className="bg-white p-6 rounded-lg shadow-md mb-8">
         <h2 className="text-xl font-semibold mb-4 flex items-center">
@@ -676,14 +824,26 @@ export default function Dashboard() {
                     >
                       <div className="flex justify-between items-center">
                         <div className="flex items-center">
-                          <div
-                            className={`h-8 w-8 rounded-full ${
-                              isPositive
-                                ? "bg-green-100 text-green-700"
-                                : "bg-red-100 text-red-700"
-                            } flex items-center justify-center mr-3 font-medium text-sm`}
-                          >
-                            {findUserName(balance.user_id).charAt(0)}
+                          <div className="h-8 w-8 rounded-full mr-3 overflow-hidden">
+                            {allUsers[balance.user_id]?.avatar_url ? (
+                              <img
+                                src={allUsers[balance.user_id].avatar_url}
+                                alt={`${findUserName(
+                                  balance.user_id
+                                )}'s avatar`}
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <div
+                                className={`h-full w-full ${
+                                  isPositive
+                                    ? "bg-green-100 text-green-700"
+                                    : "bg-red-100 text-red-700"
+                                } flex items-center justify-center font-medium text-sm`}
+                              >
+                                {findUserName(balance.user_id).charAt(0)}
+                              </div>
+                            )}
                           </div>
                           <span className="font-medium">
                             {findUserName(balance.user_id)}

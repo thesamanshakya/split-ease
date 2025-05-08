@@ -3,16 +3,16 @@ import { Roboto, Roboto_Slab } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/layout/Header";
 
-const roboto = Roboto({ 
-  weight: ['400', '500', '700'],
+const roboto = Roboto({
+  weight: ["400", "500", "700"],
   subsets: ["latin"],
-  variable: '--font-roboto',
+  variable: "--font-roboto",
 });
 
 const robotoSlab = Roboto_Slab({
-  weight: ['400', '500', '600', '700'],
+  weight: ["400", "500", "600", "700"],
   subsets: ["latin"],
-  variable: '--font-roboto-slab',
+  variable: "--font-roboto-slab",
 });
 
 export const metadata: Metadata = {
@@ -27,7 +27,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${roboto.variable} ${robotoSlab.variable} font-sans bg-gray-50 min-h-screen`}>
+      <body
+        className={`${roboto.variable} ${robotoSlab.variable} font-sans bg-gray-50 min-h-screen`}
+      >
         <Header />
         <main className="px-5 py-8">{children}</main>
       </body>
