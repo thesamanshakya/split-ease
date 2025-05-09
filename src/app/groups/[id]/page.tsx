@@ -337,7 +337,7 @@ export default function GroupPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-6">
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 col-span-3">
+        <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 col-span-3">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-lg font-semibold text-gray-800">
               Recent Expenses
@@ -419,7 +419,7 @@ export default function GroupPage() {
           )}
         </div>
 
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 col-span-2">
+        <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 col-span-2">
           <h2 className="text-lg font-semibold mb-4 text-gray-800">Balances</h2>
           {balances.length > 0 ? (
             <div className="space-y-2">
@@ -502,7 +502,7 @@ export default function GroupPage() {
         </div>
       </div>
 
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-8">
+      <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 mb-8">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-semibold text-gray-800">Group Members</h2>
           <Link
@@ -530,7 +530,7 @@ export default function GroupPage() {
           {members.map((member) => (
             <div
               key={member.id}
-              className="flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 transition-colors"
+              className="flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 transition-colors border border-gray-200"
             >
               <div className="flex items-center">
                 <div className="h-10 w-10 rounded-full overflow-hidden bg-indigo-100 flex items-center justify-center mr-3 text-indigo-700 font-medium">

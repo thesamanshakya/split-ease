@@ -545,7 +545,7 @@ export default function SettleUpPage() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6">
+    <div className="max-w-4xl mx-auto">
       {/* Toast notifications */}
       <Toaster position="top-center" />
 
@@ -688,7 +688,7 @@ export default function SettleUpPage() {
         </div>
       )}
 
-      <div className="bg-white rounded-2xl shadow-sm p-6 mb-6 border border-gray-100">
+      <div className="bg-white rounded-2xl shadow-sm p-5 mb-6 border border-gray-100">
         <h2 className="text-lg font-semibold mb-4 text-gray-800">
           Current Balances (Who Pays/Receives)
         </h2>
@@ -746,7 +746,7 @@ export default function SettleUpPage() {
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm p-6 mb-6 border border-gray-100">
+      <div className="bg-white rounded-2xl shadow-sm p-5 mb-6 border border-gray-100">
         <h2 className="text-lg font-semibold mb-4 text-gray-800">
           Suggested Payments (Who Pays To Whom)
         </h2>

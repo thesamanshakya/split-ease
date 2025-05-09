@@ -122,19 +122,19 @@ export default function GroupExpensesPage() {
   // Apply filters locally instead of making database queries
   const applyFilters = () => {
     let result = [...expenses];
-    
+
     // Sort the expenses
     result.sort((a, b) => {
       const dateA = new Date(a.date).getTime();
       const dateB = new Date(b.date).getTime();
       return sortOrder === "asc" ? dateA - dateB : dateB - dateA;
     });
-    
+
     // Filter by paid_by if a filter is selected
     if (filterPaidBy) {
-      result = result.filter(expense => expense.paid_by === filterPaidBy);
+      result = result.filter((expense) => expense.paid_by === filterPaidBy);
     }
-    
+
     setFilteredExpenses(result);
   };
 
@@ -178,7 +178,8 @@ export default function GroupExpensesPage() {
             <span className="text-gray-500 font-normal">• Expenses</span>
           </h1>
           <p className="text-gray-500">
-            {filteredExpenses.length} {filteredExpenses.length === 1 ? "expense" : "expenses"}
+            {filteredExpenses.length}{" "}
+            {filteredExpenses.length === 1 ? "expense" : "expenses"}
           </p>
         </div>
         <Link
@@ -224,7 +225,7 @@ export default function GroupExpensesPage() {
         </div>
       )}
 
-      <div className="bg-white rounded-2xl shadow-sm p-6 mb-6 border border-gray-100">
+      <div className="bg-white rounded-2xl shadow-sm p-5 mb-6 border border-gray-100">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
           <div>
             <h2 className="text-lg font-semibold text-gray-800">

@@ -248,7 +248,7 @@ export default function InvitePage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6">
+    <div className="max-w-4xl mx-auto">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-800">
           {group?.name}{" "}
@@ -318,7 +318,7 @@ export default function InvitePage() {
         </div>
       )}
 
-      <div className="bg-white rounded-2xl shadow-sm p-6 mb-6 border border-gray-100">
+      <div className="bg-white rounded-2xl shadow-sm p-5 mb-6 border border-gray-100">
         <h2 className="text-lg font-semibold mb-4 text-gray-800">
           Add Members by Name
         </h2>
@@ -430,7 +430,7 @@ export default function InvitePage() {
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm p-6 mb-6 border border-gray-100">
+      <div className="bg-white rounded-2xl shadow-sm p-5 mb-6 border border-gray-100">
         <h2 className="text-lg font-semibold mb-4 text-gray-800">
           Invite by Email
         </h2>
@@ -526,7 +526,7 @@ export default function InvitePage() {
         </form>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm p-6 border border-gray-100">
+      <div className="bg-white rounded-2xl shadow-sm p-5 border border-gray-100">
         <h2 className="text-lg font-semibold mb-4 text-gray-800">
           Current Members
         </h2>
@@ -536,7 +536,7 @@ export default function InvitePage() {
             {currentMembers.map((member) => (
               <div
                 key={member.id}
-                className="flex items-center p-3 rounded-xl hover:bg-gray-50 transition-colors"
+                className="flex items-center p-3 rounded-xl border border-gray-200 hover:bg-gray-50 transition-colors"
               >
                 <div className="h-10 w-10 rounded-full overflow-hidden bg-indigo-100 flex items-center justify-center mr-3 text-indigo-700 font-medium">
                   {member.avatar_url ? (

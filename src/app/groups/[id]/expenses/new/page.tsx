@@ -317,7 +317,7 @@ export default function NewExpensePage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6">
+    <div className="max-w-4xl mx-auto pb-20">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-800">New Expense</h1>
         <button
@@ -363,7 +363,7 @@ export default function NewExpensePage() {
         </div>
       )}
 
-      <div className="bg-white rounded-2xl shadow-sm p-6 border border-gray-100">
+      <div className="bg-white rounded-2xl shadow-sm p-5 border border-gray-100">
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label
