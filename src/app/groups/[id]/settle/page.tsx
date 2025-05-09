@@ -734,10 +734,8 @@ export default function SettleUpPage() {
                     {Math.abs(balance.amount) < 0.01
                       ? "All settled"
                       : balance.amount > 0
-                      ? `Has to receive ${formatCurrency(balance.amount)}`
-                      : `Has to pay ${formatCurrency(
-                          Math.abs(balance.amount)
-                        )}`}
+                      ? `To receive ${formatCurrency(balance.amount)}`
+                      : `To pay ${formatCurrency(Math.abs(balance.amount))}`}
                   </span>
                 </div>
               </div>
@@ -803,14 +801,14 @@ export default function SettleUpPage() {
                           {toIsCurrentUser
                             ? `${findUserName(
                                 settlement.from
-                              )} has to pay ${formatCurrency(
+                              )} To pay ${formatCurrency(
                                 settlement.amount
                               )} to you`
                             : ""}
                           {!fromIsCurrentUser && !toIsCurrentUser
                             ? `${findUserName(
                                 settlement.from
-                              )} has to pay ${formatCurrency(
+                              )} To pay ${formatCurrency(
                                 settlement.amount
                               )} to ${findUserName(settlement.to)}`
                             : ""}

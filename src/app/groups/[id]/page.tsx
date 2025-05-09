@@ -468,13 +468,13 @@ export default function GroupPage() {
                           <span className="block mt-1.5">All settled</span>
                         ) : balance.amount > 0 ? (
                           <>
-                            Has to receive
+                            To receive
                             <br />
                             {formatCurrency(balance.amount)}
                           </>
                         ) : (
                           <>
-                            Has to pay
+                            To pay
                             <br />
                             {formatCurrency(Math.abs(balance.amount))}
                           </>

@@ -536,11 +536,11 @@ export default function Dashboard() {
                           }`}
                         >
                           {groupBalances[group.id] < 0
-                            ? `Has to pay ${formatCurrency(
+                            ? `To pay ${formatCurrency(
                                 Math.abs(groupBalances[group.id])
                               )}`
                             : groupBalances[group.id] > 0
-                            ? `Has to receive ${formatCurrency(
+                            ? `To receive ${formatCurrency(
                                 groupBalances[group.id]
                               )}`
                             : "All settled"}
@@ -943,8 +943,8 @@ export default function Dashboard() {
                           }`}
                         >
                           {isPositive
-                            ? `Has to receive ${formatCurrency(balance.amount)}`
-                            : `Has to pay ${formatCurrency(
+                            ? `To receive ${formatCurrency(balance.amount)}`
+                            : `To pay ${formatCurrency(
                                 Math.abs(balance.amount)
                               )}`}
                         </div>

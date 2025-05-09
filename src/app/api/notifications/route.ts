@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
+import { createClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 import { Database } from "@/types/supabase";
 import { getSession } from "@/utils/session";
@@ -7,26 +7,21 @@ import { getSession } from "@/utils/session";
 // GET handler to fetch notifications for the current user
 export async function GET(req: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient<Database>({ cookies });
-
-    // Get the current session from Iron Session
+    // Use Iron Session for authentication instead of Supabase cookies
     const ironSession = await getSession();
 
     if (!ironSession.isLoggedIn || !ironSession.userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Verify with Supabase if needed
-    const {
-      data: { session },
-      error: sessionError,
-    } = await supabase.auth.getSession();
+    // Create a direct Supabase client without using cookies
+    const supabase = createClient<Database>(
+      process.env.NEXT_PUBLIC_SUPABASE_URL || "",
+      process.env.SUPABASE_SERVICE_ROLE_KEY || ""
+    );
 
-    // Double-check with Supabase session as well
-    if (sessionError || !session) {
-      console.warn("Iron session valid but Supabase session invalid");
-      // We'll continue with the Iron session userId anyway
-    }
+    // No need to verify with Supabase session, we're using the service role key
+    // which has admin privileges and bypasses RLS
 
     // Get query parameters
     const searchParams = req.nextUrl.searchParams;
@@ -90,26 +85,20 @@ export async function GET(req: NextRequest) {
 // PATCH handler to mark notifications as read
 export async function PATCH(req: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient<Database>({ cookies });
-
-    // Get the current session from Iron Session
+    // Use Iron Session for authentication instead of Supabase cookies
     const ironSession = await getSession();
 
     if (!ironSession.isLoggedIn || !ironSession.userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Verify with Supabase if needed
-    const {
-      data: { session },
-      error: sessionError,
-    } = await supabase.auth.getSession();
+    // Create a direct Supabase client without using cookies
+    const supabase = createClient<Database>(
+      process.env.NEXT_PUBLIC_SUPABASE_URL || "",
+      process.env.SUPABASE_SERVICE_ROLE_KEY || ""
+    );
 
-    // Double-check with Supabase session as well
-    if (sessionError || !session) {
-      console.warn("Iron session valid but Supabase session invalid");
-      // We'll continue with the Iron session userId anyway
-    }
+    // No need to verify with Supabase session, we're using the service role key
 
     // Get request body
     const body = await req.json();
