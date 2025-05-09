@@ -66,3 +66,16 @@ export interface Activity {
   to_user_id?: string;
   settled_by?: string;
 }
+
+export type NotificationType = 'expense_added' | 'settlement_request' | 'settlement_completed' | 'group_invitation';
+
+export interface Notification {
+  id: string;
+  user_id: string;
+  type: NotificationType;
+  content: string;
+  related_id?: string;
+  group_id?: string;
+  created_at: string;
+  read: boolean;
+}

@@ -15,6 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ChevronDown, User as UserIcon, LogOut } from "lucide-react";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 
 export default function Header() {
   const pathname = usePathname();
@@ -82,14 +83,21 @@ export default function Header() {
     window.addEventListener("auth-state-change", handleAuthChange);
 
     // Check if we're on the auth page with a verification parameter
-    if (pathname === "/auth" && window.location.search.includes("verification=success")) {
+    if (
+      pathname === "/auth" &&
+      window.location.search.includes("verification=success")
+    ) {
       // If we've just verified email, check auth status immediately
       getUser();
     }
 
     // Check for URL parameters that might indicate auth state changes
     const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.has("login") || urlParams.has("signup") || urlParams.has("reset")) {
+    if (
+      urlParams.has("login") ||
+      urlParams.has("signup") ||
+      urlParams.has("reset")
+    ) {
       // These parameters might indicate we've just completed an auth flow
       getUser();
     }
@@ -138,7 +146,7 @@ export default function Header() {
 
         // Trigger a storage event for cross-tab synchronization
         localStorage.setItem("auth-state-change", Date.now().toString());
-        
+
         // Dispatch a custom event for same-tab notification
         window.dispatchEvent(new Event("auth-state-change"));
 
@@ -227,69 +235,74 @@ export default function Header() {
 
         <div className="flex items-center gap-4">
           {user ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  className="flex items-center gap-1 px-2"
-                >
-                  <span>{user.name}</span>
-                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <Link href="/dashboard" className="w-full">
-                  <DropdownMenuItem className="cursor-pointer">
-                    <svg
-                      className="mr-2 h-4 w-4"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
-                      />
-                    </svg>
-                    <span>Dashboard</span>
+            <>
+              <span className="-mr-3.5">
+                <NotificationBell />
+              </span>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    className="flex items-center gap-1 px-2"
+                  >
+                    <span>{user.name}</span>
+                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <Link href="/dashboard" className="w-full">
+                    <DropdownMenuItem className="cursor-pointer">
+                      <svg
+                        className="mr-2 h-4 w-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+                        />
+                      </svg>
+                      <span>Dashboard</span>
+                    </DropdownMenuItem>
+                  </Link>
+                  <Link href="/groups" className="w-full">
+                    <DropdownMenuItem className="cursor-pointer">
+                      <svg
+                        className="mr-2 h-4 w-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                        />
+                      </svg>
+                      <span>Groups</span>
+                    </DropdownMenuItem>
+                  </Link>
+                  <Link href="/profile" className="w-full">
+                    <DropdownMenuItem className="cursor-pointer">
+                      <UserIcon className="mr-2 h-4 w-4" />
+                      <span>Your Profile</span>
+                    </DropdownMenuItem>
+                  </Link>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="cursor-pointer text-red-600 focus:text-red-600"
+                    onClick={handleSignOut}
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Log out</span>
                   </DropdownMenuItem>
-                </Link>
-                <Link href="/groups" className="w-full">
-                  <DropdownMenuItem className="cursor-pointer">
-                    <svg
-                      className="mr-2 h-4 w-4"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-                      />
-                    </svg>
-                    <span>Groups</span>
-                  </DropdownMenuItem>
-                </Link>
-                <Link href="/profile" className="w-full">
-                  <DropdownMenuItem className="cursor-pointer">
-                    <UserIcon className="mr-2 h-4 w-4" />
-                    <span>Your Profile</span>
-                  </DropdownMenuItem>
-                </Link>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  className="cursor-pointer text-red-600 focus:text-red-600"
-                  onClick={handleSignOut}
-                >
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Log out</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </>
           ) : (
             <>
               <Link href="/auth">
