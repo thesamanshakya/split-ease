@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { cookies } from "next/headers";
 import { Database } from "@/types/supabase";
 import { getSession } from "@/utils/session";
 
