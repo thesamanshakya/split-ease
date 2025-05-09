@@ -58,7 +58,7 @@ export default function Header() {
     getUser();
 
     // Set up an interval to periodically check the session
-    const intervalId = setInterval(getUser, 30000); // Check every 30 seconds
+    const intervalId = setInterval(getUser, 15000); // Check every 15 seconds
 
     // Listen for storage events (for cross-tab synchronization)
     const handleStorageChange = (event: StorageEvent) => {
@@ -72,15 +72,35 @@ export default function Header() {
       getUser();
     };
 
+    // Listen for custom auth state change events (for same-tab notification)
+    const handleAuthChange = () => {
+      getUser();
+    };
+
     window.addEventListener("storage", handleStorageChange);
     window.addEventListener("focus", handleFocus);
+    window.addEventListener("auth-state-change", handleAuthChange);
+
+    // Check if we're on the auth page with a verification parameter
+    if (pathname === "/auth" && window.location.search.includes("verification=success")) {
+      // If we've just verified email, check auth status immediately
+      getUser();
+    }
+
+    // Check for URL parameters that might indicate auth state changes
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has("login") || urlParams.has("signup") || urlParams.has("reset")) {
+      // These parameters might indicate we've just completed an auth flow
+      getUser();
+    }
 
     return () => {
       clearInterval(intervalId);
       window.removeEventListener("storage", handleStorageChange);
       window.removeEventListener("focus", handleFocus);
+      window.removeEventListener("auth-state-change", handleAuthChange);
     };
-  }, []);
+  }, [pathname]);
 
   const handleSignOut = async () => {
     try {
@@ -91,8 +111,8 @@ export default function Header() {
         headers: {
           // Add cache control headers to prevent caching
           "Cache-Control": "no-cache, no-store, must-revalidate",
-          "Pragma": "no-cache",
-          "Expires": "0"
+          Pragma: "no-cache",
+          Expires: "0",
         },
       });
 
@@ -109,13 +129,18 @@ export default function Header() {
         // Clear any auth-related items from localStorage
         localStorage.removeItem("sb-auth-token");
         localStorage.removeItem("supabase.auth.token");
-        
+
         // Clear any auth-related cookies
-        document.cookie = "sb-auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax; secure";
-        document.cookie = "splitease_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax; secure";
+        document.cookie =
+          "sb-auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax; secure";
+        document.cookie =
+          "splitease_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax; secure";
 
         // Trigger a storage event for cross-tab synchronization
         localStorage.setItem("auth-state-change", Date.now().toString());
+        
+        // Dispatch a custom event for same-tab notification
+        window.dispatchEvent(new Event("auth-state-change"));
 
         // Force a refresh to ensure the middleware picks up the session change
         router.refresh();
@@ -131,13 +156,18 @@ export default function Header() {
     } catch (error) {
       console.error("Sign out exception:", error);
       toast.error("An unexpected error occurred during sign out.");
-      
+
       // Attempt to clear session data anyway in case of API failure
       localStorage.removeItem("sb-auth-token");
       localStorage.removeItem("supabase.auth.token");
-      document.cookie = "sb-auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax; secure";
-      document.cookie = "splitease_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax; secure";
-      
+      document.cookie =
+        "sb-auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax; secure";
+      document.cookie =
+        "splitease_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax; secure";
+
+      // Dispatch a custom event for same-tab notification
+      window.dispatchEvent(new Event("auth-state-change"));
+
       // Redirect to auth page after a short delay
       setTimeout(() => {
         router.push("/auth");

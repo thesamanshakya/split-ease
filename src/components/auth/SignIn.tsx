@@ -44,6 +44,9 @@ export default function SignIn() {
         // Trigger a storage event for cross-tab synchronization
         localStorage.setItem("auth-state-change", Date.now().toString());
         
+        // Dispatch a custom event for same-tab notification
+        window.dispatchEvent(new Event("auth-state-change"));
+        
         // Show success message
         toast.success("Signed in successfully!", {
           duration: 3000,
