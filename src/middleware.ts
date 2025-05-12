@@ -32,12 +32,6 @@ export async function middleware(request: NextRequest) {
 
     const isAuthPage = request.nextUrl.pathname === "/auth";
     const isPublicPage = request.nextUrl.pathname === "/";
-    const isDashboardPage = request.nextUrl.pathname === "/dashboard";
-
-    // Get the referrer URL to prevent redirect loops
-    const referrer = request.headers.get("referer") || "";
-    const referrerUrl = referrer ? new URL(referrer) : null;
-    const isComingFromAuthPage = referrerUrl?.pathname === "/auth";
 
     // Handle authentication redirects
     if (!isAuthenticated && !isAuthPage && !isPublicPage) {
