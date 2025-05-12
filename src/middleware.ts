@@ -15,11 +15,12 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  try {
-    // Create a new Response object for iron-session
-    const res = new Response();
+  // Create a response object that we'll manipulate and return
+  let response = NextResponse.next();
 
+  try {
     // Get the session from iron-session
+    const res = new Response();
     const session = await getIronSession<SessionData>(
       request,
       res,
@@ -29,41 +30,43 @@ export async function middleware(request: NextRequest) {
     // Check authentication status
     const isAuthenticated = session.isLoggedIn && !!session.userId;
 
-    // Define public and protected paths
     const isAuthPage = request.nextUrl.pathname === "/auth";
     const isPublicPage = request.nextUrl.pathname === "/";
-    const isProtectedPage = !isAuthPage && !isPublicPage;
+    const isDashboardPage = request.nextUrl.pathname === "/dashboard";
 
-    // Create a response based on authentication status and requested path
-    let response;
-
-    // Handle redirects based on auth status and requested path
-    if (!isAuthenticated && isProtectedPage) {
-      // Not authenticated trying to access protected page - redirect to auth
-      const url = new URL("/auth", request.url);
-      response = NextResponse.redirect(url);
-    } else if (isAuthenticated && isAuthPage) {
-      // Authenticated trying to access auth page - redirect to dashboard
-      const url = new URL("/dashboard", request.url);
-      response = NextResponse.redirect(url);
-    } else {
-      // Default: proceed to the requested page
-      response = NextResponse.next();
+    // Handle authentication redirects
+    if (!isAuthenticated && !isAuthPage && !isPublicPage) {
+      // If not authenticated and not on auth page, redirect to auth
+      const redirectUrl = new URL("/auth", request.url);
+      if (request.nextUrl.pathname !== "/auth") {
+        response = NextResponse.redirect(redirectUrl);
+        console.log(
+          `Redirecting unauthenticated user from ${request.nextUrl.pathname} to /auth`
+        );
+      }
     }
+    // else if (isAuthenticated && !isDashboardPage) {
+    //   // If authenticated and on auth page, redirect to dashboard
+    //   const redirectUrl = new URL("/dashboard", request.url);
+    //   if (request.nextUrl.pathname !== "/dashboard") {
+    //     response = NextResponse.redirect(redirectUrl);
+    //     console.log(`Redirecting authenticated user from /auth to /dashboard`);
+    //   }
+    // }
 
-    // Get the Set-Cookie header from the iron-session response
+    // Get the Set-Cookie header from the response
     const setCookieHeader = res.headers.get("Set-Cookie");
     if (setCookieHeader) {
-      // Apply the Set-Cookie header to our response
+      // Apply the Set-Cookie header to the NextResponse
       response.headers.set("Set-Cookie", setCookieHeader);
     }
-
-    return response;
   } catch (error) {
     console.error("Middleware error:", error);
-    // In case of an error, proceed to the requested page
+    // In case of error, just continue to the page without redirecting
     return NextResponse.next();
   }
+
+  return response;
 }
 
 export const config = {
