@@ -32,16 +32,30 @@ export async function middleware(request: NextRequest) {
 
     const isAuthPage = request.nextUrl.pathname === "/auth";
     const isPublicPage = request.nextUrl.pathname === "/";
+    const isDashboardPage = request.nextUrl.pathname === "/dashboard";
+
+    // Get the referrer URL to prevent redirect loops
+    const referrer = request.headers.get("referer") || "";
+    const referrerUrl = referrer ? new URL(referrer) : null;
+    const isComingFromAuthPage = referrerUrl?.pathname === "/auth";
 
     // Handle authentication redirects
     if (!isAuthenticated && !isAuthPage && !isPublicPage) {
       // If not authenticated and not on auth page, redirect to auth
       const redirectUrl = new URL("/auth", request.url);
-      response = NextResponse.redirect(redirectUrl);
+      if (request.nextUrl.pathname !== "/auth") {
+        response = NextResponse.redirect(redirectUrl);
+        console.log(
+          `Redirecting unauthenticated user from ${request.nextUrl.pathname} to /auth`
+        );
+      }
     } else if (isAuthenticated && isAuthPage) {
       // If authenticated and on auth page, redirect to dashboard
       const redirectUrl = new URL("/dashboard", request.url);
-      response = NextResponse.redirect(redirectUrl);
+      if (request.nextUrl.pathname !== "/dashboard") {
+        response = NextResponse.redirect(redirectUrl);
+        console.log(`Redirecting authenticated user from /auth to /dashboard`);
+      }
     }
 
     // Get the Set-Cookie header from the response
@@ -52,6 +66,8 @@ export async function middleware(request: NextRequest) {
     }
   } catch (error) {
     console.error("Middleware error:", error);
+    // In case of error, just continue to the page without redirecting
+    return NextResponse.next();
   }
 
   return response;
