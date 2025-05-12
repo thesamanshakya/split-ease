@@ -32,7 +32,7 @@ export async function middleware(request: NextRequest) {
 
     const isAuthPage = request.nextUrl.pathname === "/auth";
     const isPublicPage = request.nextUrl.pathname === "/";
-    const isDashboardPage = request.nextUrl.pathname === "/dashboard";
+    // const isDashboardPage = request.nextUrl.pathname === "/dashboard";
 
     // Handle authentication redirects
     if (!isAuthenticated && !isAuthPage && !isPublicPage) {
