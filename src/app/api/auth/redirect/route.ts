@@ -9,6 +9,7 @@ export async function GET(request: NextRequest) {
   const token = searchParams.get("token");
   const type = searchParams.get("type");
   const code = searchParams.get("code");
+  const isSignup = searchParams.get("signup") === "true";
 
   // Check if this is a verification redirect from Supabase
   if (token && type === "signup") {
@@ -51,7 +52,13 @@ export async function GET(request: NextRequest) {
         // Create a response that will redirect to dashboard with a success parameter
         // This will trigger the same success toast as normal login
         const redirectUrl = new URL("/dashboard", request.url);
-        redirectUrl.searchParams.set("login", "success");
+        
+        // Set the appropriate parameter based on whether this is a signup or login
+        if (isSignup) {
+          redirectUrl.searchParams.set("signup", "success");
+        } else {
+          redirectUrl.searchParams.set("login", "success");
+        }
 
         // Redirect to dashboard with success parameter
         return NextResponse.redirect(redirectUrl);

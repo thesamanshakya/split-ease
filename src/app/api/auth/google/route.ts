@@ -6,12 +6,16 @@ export async function GET(req: NextRequest) {
     // Get the current URL to extract the origin for the redirect
     const url = new URL(req.url);
     const origin = url.origin;
+    const searchParams = url.searchParams;
+    
+    // Check if this is a signup request
+    const isSignup = searchParams.get('signup') === 'true';
     
     // Get the redirect URL for Google OAuth
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${origin}/api/auth/redirect`,
+        redirectTo: `${origin}/api/auth/redirect${isSignup ? '?signup=true' : ''}`,
         queryParams: {
           access_type: 'offline',
           prompt: 'consent',
