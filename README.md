@@ -1,6 +1,6 @@
-# SplitEase - Restaurant Bill Splitting App
+# SplitEase - Bill Splitting App
 
-SplitEase is a web application that helps groups of people split restaurant bills easily. Users can create groups, add expenses, and track who owes what to whom.
+SplitEase is a web application that helps groups of people split bills easily. Users can create groups, add expenses, and track who owes what to whom.
 
 ## Features
 

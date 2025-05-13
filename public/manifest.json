@@ -1,7 +1,7 @@
 {
   "name": "SplitEase",
   "short_name": "SplitEase",
-  "description": "A simple app to split restaurant bills with friends",
+  "description": "A simple app to split bills with friends",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

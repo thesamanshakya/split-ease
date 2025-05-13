@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Roboto, Roboto_Slab } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/layout/Header";
-import { GoogleAnalytics } from '@next/third-parties/google';
+import { GoogleAnalytics } from "@next/third-parties/google";
 
 const roboto = Roboto({
   weight: ["400", "500", "700"],
@@ -18,7 +18,7 @@ const robotoSlab = Roboto_Slab({
 
 export const metadata: Metadata = {
   title: "SplitEase - Split Bills Easily",
-  description: "A simple app to split restaurant bills with friends",
+  description: "A simple app to split bills with friends",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,

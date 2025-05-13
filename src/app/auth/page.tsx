@@ -45,8 +45,7 @@ export default function AuthPage() {
         Welcome to SplitEase
       </h1>
       <p className="text-center text-gray-600 mb-8 max-w-md mx-auto">
-        Split restaurant bills effortlessly with friends and keep track of who
-        owes what.
+        Split bills effortlessly with friends and keep track of who owes what.
       </p>
 
       <Suspense fallback={<div className="text-center">Loading...</div>}>
