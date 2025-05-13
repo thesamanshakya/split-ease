@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import AuthForm from "@/components/auth/AuthForm";
 
@@ -49,7 +49,9 @@ export default function AuthPage() {
         owes what.
       </p>
 
-      <AuthForm />
+      <Suspense fallback={<div className="text-center">Loading...</div>}>
+        <AuthForm />
+      </Suspense>
     </div>
   );
 }

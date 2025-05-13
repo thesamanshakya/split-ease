@@ -1,12 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Toaster } from "react-hot-toast";
+import { useSearchParams } from "next/navigation";
 import SignIn from "./SignIn";
 import SignUp from "./SignUp";
 
 export default function AuthForm() {
+  const searchParams = useSearchParams();
   const [view, setView] = useState<"sign-in" | "sign-up">("sign-in");
+  
+  useEffect(() => {
+    // Check if the signup parameter is present in the URL
+    const signupParam = searchParams.get("signup");
+    if (signupParam === "true") {
+      setView("sign-up");
+    }
+  }, [searchParams]);
 
   return (
     <div className="container mx-auto py-8">

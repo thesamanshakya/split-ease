@@ -6,6 +6,7 @@ import { supabase } from "@/utils/supabase";
 import { User } from "@/types";
 import Link from "next/link";
 import Image from "next/image";
+import { maskEmail } from "@/utils/string-utils";
 
 export default function InvitePage() {
   const router = useRouter();
@@ -390,7 +391,7 @@ export default function InvitePage() {
                           {user.name}
                         </div>
                         <div className="text-sm text-gray-500 truncate max-sm:max-w-[110px]">
-                          {user.email}
+                          {maskEmail(user.email)}
                         </div>
                       </div>
                     </div>
