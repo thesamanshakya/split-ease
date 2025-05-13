@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "react-hot-toast";
+import GoogleSignIn from "./GoogleSignIn";
 
 export default function SignIn() {
   const [email, setEmail] = useState("");
@@ -25,8 +26,8 @@ export default function SignIn() {
           "Content-Type": "application/json",
           // Add cache control headers to prevent caching
           "Cache-Control": "no-cache, no-store, must-revalidate",
-          "Pragma": "no-cache",
-          "Expires": "0"
+          Pragma: "no-cache",
+          Expires: "0",
         },
         body: JSON.stringify({ email, password }),
       });
@@ -40,13 +41,13 @@ export default function SignIn() {
       if (data.success) {
         // Clear any previous auth errors
         setError(null);
-        
+
         // Trigger a storage event for cross-tab synchronization
         localStorage.setItem("auth-state-change", Date.now().toString());
-        
+
         // Dispatch a custom event for same-tab notification
         window.dispatchEvent(new Event("auth-state-change"));
-        
+
         // Show success message
         toast.success("Signed in successfully!", {
           duration: 3000,
@@ -67,12 +68,12 @@ export default function SignIn() {
             credentials: "include",
             headers: {
               "Cache-Control": "no-cache, no-store, must-revalidate",
-              "Pragma": "no-cache",
-              "Expires": "0"
-            }
+              Pragma: "no-cache",
+              Expires: "0",
+            },
           })
-            .then(res => res.json())
-            .then(sessionData => {
+            .then((res) => res.json())
+            .then((sessionData) => {
               if (sessionData.isLoggedIn) {
                 // Navigate to dashboard
                 router.push("/dashboard");
@@ -80,9 +81,11 @@ export default function SignIn() {
                 throw new Error("Session verification failed");
               }
             })
-            .catch(err => {
+            .catch((err) => {
               console.error("Session verification error:", err);
-              setError("Login successful but session verification failed. Please try again.");
+              setError(
+                "Login successful but session verification failed. Please try again."
+              );
               setLoading(false);
             });
         }, 500);
@@ -107,6 +110,8 @@ export default function SignIn() {
     useEffect(() => {
       // Check if this is a verification redirect
       const verification = searchParams.get("verification");
+      // Check if there's an OAuth error
+      const error = searchParams.get("error");
 
       // Use localStorage to ensure we only show the toast once per session
       const hasShownVerificationToast = localStorage.getItem(
@@ -134,6 +139,21 @@ export default function SignIn() {
         setTimeout(() => {
           localStorage.removeItem("verification_toast_shown");
         }, 60000);
+      }
+
+      // Show error message if OAuth failed
+      if (error === "oauth_failed") {
+        toast.error(
+          "Failed to sign in with Google. Please try again or use email/password.",
+          {
+            duration: 5000,
+            style: {
+              background: "#333",
+              color: "#fff",
+            },
+            id: "oauth-error", // Add an ID to prevent duplicate toasts
+          }
+        );
       }
     }, [searchParams]);
 
@@ -191,6 +211,17 @@ export default function SignIn() {
         >
           {loading ? "Signing in..." : "Sign In"}
         </button>
+
+        <div className="mt-4 relative">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-300"></div>
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="px-2 bg-white text-gray-500">OR</span>
+          </div>
+        </div>
+
+        <GoogleSignIn />
       </form>
     </div>
   );
