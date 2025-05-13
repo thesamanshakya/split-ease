@@ -11,11 +11,14 @@ export async function GET(req: NextRequest) {
     // Check if this is a signup request
     const isSignup = searchParams.get('signup') === 'true';
     
+    console.log("Starting Google OAuth flow", { origin, isSignup });
+    
     // Get the redirect URL for Google OAuth
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${origin}/api/auth/redirect${isSignup ? '?signup=true' : ''}`,
+        // Use the custom API route for the redirect
+        redirectTo: `${origin}/api/auth/callback`,
         queryParams: {
           access_type: 'offline',
           prompt: 'consent',
@@ -28,8 +31,22 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    console.log("Generated OAuth URL:", data.url);
+    
+    // Store the signup state in a cookie if needed
+    const response = NextResponse.redirect(data.url);
+    if (isSignup) {
+      response.cookies.set('oauth_signup', 'true', { 
+        path: '/',
+        maxAge: 60 * 10, // 10 minutes
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax'
+      });
+    }
+    
     // Redirect to the Google OAuth URL
-    return NextResponse.redirect(data.url);
+    return response;
   } catch (error) {
     console.error("Unexpected Google OAuth error:", error);
     return NextResponse.json(

@@ -7,20 +7,36 @@ import { sessionOptions, SessionData } from "@/utils/session";
 export async function POST(req: NextRequest) {
   try {
     // Get credentials from request body
-    const { email, password } = await req.json();
+    const body = await req.json();
+    const { email, password, provider, access_token, refresh_token } = body;
 
-    if (!email || !password) {
+    let data: any = null;
+    let error: any = null;
+
+    // Check if this is an OAuth login or a password login
+    if (provider === "google" && access_token && refresh_token) {
+      console.log("Processing OAuth login");
+
+      // For OAuth logins, we already have the tokens, so we just need to verify them
+      // We'll set the session directly
+      ({ data, error } = await supabase.auth.setSession({
+        access_token,
+        refresh_token,
+      }));
+    } else if (email && password) {
+      console.log("Processing password login");
+
+      // For password logins, authenticate with Supabase
+      ({ data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      }));
+    } else {
       return NextResponse.json(
-        { error: "Email and password are required" },
+        { error: "Invalid login credentials" },
         { status: 400 }
       );
     }
-
-    // Authenticate with Supabase
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
 
     if (error) {
       console.error("Login error:", error);
