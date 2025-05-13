@@ -30,7 +30,7 @@ export default function LandingPage() {
           settle payments without the hassle.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 mt-4">
-          <Link href="/auth">
+          <Link href="/auth?signup=true">
             <Button size="lg" className="bg-indigo-600 hover:bg-indigo-700">
               Get Started <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
@@ -181,7 +181,7 @@ export default function LandingPage() {
             Join thousands of users who are already enjoying stress-free expense
             sharing.
           </p>
-          <Link href="/auth">
+          <Link href="/auth?signup=true">
             <Button
               size="lg"
               className="bg-white text-indigo-600 hover:bg-indigo-50"
