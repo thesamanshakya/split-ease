@@ -17,6 +17,28 @@ const noCacheRoutes = [
   '/api/auth/redirect'
 ];
 
+// Helper function to check if a request is cacheable
+function isCacheableRequest(request) {
+  const url = new URL(request.url);
+
+  // Don't cache chrome-extension:// URLs
+  if (url.protocol === 'chrome-extension:') {
+    return false;
+  }
+
+  // Don't cache POST requests or other non-GET requests
+  if (request.method !== 'GET') {
+    return false;
+  }
+
+  // Don't cache auth-related routes
+  if (noCacheRoutes.some(route => url.pathname.startsWith(route))) {
+    return false;
+  }
+
+  return true;
+}
+
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
@@ -28,20 +50,26 @@ self.addEventListener('install', (event) => {
 
 // Skip waiting to ensure the new service worker activates immediately
 self.addEventListener('activate', (event) => {
-  event.waitUntil(self.clients.claim());
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((cacheName) => {
+          if (cacheName !== CACHE_NAME) {
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    }).then(() => self.clients.claim())
+  );
 });
 
 self.addEventListener('fetch', (event) => {
-  // Skip caching for auth-related routes
-  const url = new URL(event.request.url);
-  const shouldNotCache = noCacheRoutes.some(route => url.pathname.startsWith(route));
-  
-  if (shouldNotCache) {
-    // For auth routes, always go to network and don't cache
-    event.respondWith(fetch(event.request));
+  // First check if the request is cacheable
+  if (!isCacheableRequest(event.request)) {
+    // For non-cacheable requests, just use network
     return;
   }
-  
+
   // For all other routes, use cache-first strategy
   event.respondWith(
     caches.match(event.request)
@@ -50,8 +78,11 @@ self.addEventListener('fetch', (event) => {
         if (response) {
           return response;
         }
-        
-        return fetch(event.request).then(
+
+        // Clone the request because it's a one-time use stream
+        const fetchRequest = event.request.clone();
+
+        return fetch(fetchRequest).then(
           (response) => {
             // Check if we received a valid response
             if (!response || response.status !== 200 || response.type !== 'basic') {
@@ -61,9 +92,13 @@ self.addEventListener('fetch', (event) => {
             // Clone the response
             const responseToCache = response.clone();
 
+            // Don't block the response on cache operations
             caches.open(CACHE_NAME)
               .then((cache) => {
                 cache.put(event.request, responseToCache);
+              })
+              .catch(err => {
+                console.warn('Failed to cache response:', err);
               });
 
             return response;
