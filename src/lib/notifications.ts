@@ -2,6 +2,7 @@ import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 import { Database } from "@/types/supabase";
 import { NotificationType } from "@/types";
+import { formatCurrency } from "@/utils/currency";
 
 /**
  * Creates a notification for a user
@@ -81,7 +82,7 @@ export async function createExpenseAddedNotifications({
     const notifications = groupMembers.map((member) => ({
       user_id: member.user_id,
       type: "expense_added" as NotificationType,
-      content: `${createdByUserName} added a new expense of $${expenseAmount.toFixed(2)} for "${expenseDescription}" in ${groupName}.`,
+      content: `${createdByUserName} added a new expense of ${formatCurrency(expenseAmount)} for "${expenseDescription}" in ${groupName}.`,
       related_id: expenseId,
       group_id: groupId,
     }));
@@ -121,7 +122,7 @@ export async function createSettlementRequestNotification({
   return createNotification({
     userId: toUserId,
     type: "settlement_request",
-    content: `${fromUserName} has requested a settlement of $${amount.toFixed(2)} in ${groupName}.`,
+    content: `${fromUserName} has requested a settlement of ${formatCurrency(amount)} in ${groupName}.`,
     groupId,
   });
 }
@@ -156,7 +157,7 @@ export async function createSettlementCompletedNotification({
     notifications.push({
       userId: fromUserId,
       type: "settlement_completed" as NotificationType,
-      content: `${settledByUserName} marked your payment of $${amount.toFixed(2)} as settled in ${groupName}.`,
+      content: `${settledByUserName} marked your payment of ${formatCurrency(amount)} as settled in ${groupName}.`,
       relatedId: settlementId,
       groupId,
     });
@@ -166,7 +167,7 @@ export async function createSettlementCompletedNotification({
     notifications.push({
       userId: toUserId,
       type: "settlement_completed" as NotificationType,
-      content: `${settledByUserName} marked a payment of $${amount.toFixed(2)} to you as settled in ${groupName}.`,
+      content: `${settledByUserName} marked a payment of ${formatCurrency(amount)} to you as settled in ${groupName}.`,
       relatedId: settlementId,
       groupId,
     });

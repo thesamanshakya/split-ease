@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { supabase } from "@/utils/supabase";
 import { User } from "@/types";
+import AddExpenseSkeleton from "@/components/ui/AddExpenseSkeleton";
 
 export default function NewExpensePage() {
   const router = useRouter();
@@ -309,11 +310,7 @@ export default function NewExpensePage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
-      </div>
-    );
+    return <AddExpenseSkeleton />;
   }
 
   return (

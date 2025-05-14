@@ -8,6 +8,7 @@ import { formatCurrency } from "@/utils/currency";
 import { Group, User, Expense, Balance, ExpenseSplit } from "@/types";
 import Image from "next/image";
 import toast, { Toaster } from "react-hot-toast";
+import GroupSkeleton from "@/components/ui/GroupSkeleton";
 
 interface Settlement {
   id: string;
@@ -271,11 +272,7 @@ export default function GroupPage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
-      </div>
-    );
+    return <GroupSkeleton />;
   }
 
   if (error || !group) {
@@ -304,8 +301,10 @@ export default function GroupPage() {
     });
   };
 
+  // Loading state is handled above
+
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-4xl mx-auto p-4">
       <Toaster position="top-center" />
       <div className="flex justify-between items-center mb-6">
         <div>

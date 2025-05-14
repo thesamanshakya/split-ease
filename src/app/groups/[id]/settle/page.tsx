@@ -9,6 +9,7 @@ import { formatCurrency } from "@/utils/currency";
 import { User, Expense, ExpenseSplit } from "@/types";
 import toast, { Toaster } from "react-hot-toast";
 import { X } from "lucide-react";
+import SettleSkeleton from "@/components/ui/SettleSkeleton";
 
 interface Settlement {
   from: string;
@@ -469,11 +470,7 @@ export default function SettleUpPage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
-      </div>
-    );
+    return <SettleSkeleton />;
   }
 
   const handleConfirmPayment = async (settlement: Settlement) => {

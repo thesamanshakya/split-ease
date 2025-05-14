@@ -13,10 +13,10 @@ interface NotificationListProps {
   onMarkAsRead: (ids?: string[]) => void;
 }
 
-export function NotificationList({ 
-  notifications, 
-  loading, 
-  onMarkAsRead 
+export function NotificationList({
+  notifications,
+  loading,
+  onMarkAsRead,
 }: NotificationListProps) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 
@@ -120,9 +120,13 @@ export function NotificationList({
       case "expense_added":
       case "settlement_request":
       case "settlement_completed":
-        return notification.group_id ? `/groups/${notification.group_id}` : "/dashboard";
+        return notification.group_id
+          ? `/groups/${notification.group_id}`
+          : "/dashboard";
       case "group_invitation":
-        return notification.group_id ? `/groups/${notification.group_id}` : "/groups";
+        return notification.group_id
+          ? `/groups/${notification.group_id}`
+          : "/groups";
       default:
         return "/dashboard";
     }
@@ -149,10 +153,10 @@ export function NotificationList({
     <div className="max-h-[400px] overflow-y-auto">
       <div className="flex items-center justify-between p-4 border-b">
         <h3 className="font-medium">Notifications</h3>
-        {notifications.some(n => !n.read) && (
-          <Button 
-            variant="ghost" 
-            size="sm" 
+        {notifications.some((n) => !n.read) && (
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => onMarkAsRead()}
             className="text-xs text-blue-600 hover:text-blue-800"
           >
@@ -182,7 +186,9 @@ export function NotificationList({
                 {notification.content}
               </p>
               <p className="text-xs text-gray-500 mt-1">
-                {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
+                {formatDistanceToNow(new Date(notification.created_at), {
+                  addSuffix: true,
+                })}
               </p>
             </div>
             {!notification.read && hoveredId === notification.id && (
