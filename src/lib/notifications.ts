@@ -82,7 +82,9 @@ export async function createExpenseAddedNotifications({
     const notifications = groupMembers.map((member) => ({
       user_id: member.user_id,
       type: "expense_added" as NotificationType,
-      content: `${createdByUserName} added a new expense of रु {formatCurrency(expenseAmount)} for "${expenseDescription}" in ${groupName}.`,
+      content: `${createdByUserName} added a new expense of ${formatCurrency(
+        expenseAmount
+      )} for "${expenseDescription}" in ${groupName}.`,
       related_id: expenseId,
       group_id: groupId,
     }));
