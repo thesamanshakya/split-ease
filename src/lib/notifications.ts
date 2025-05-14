@@ -22,7 +22,7 @@ export async function createNotification({
 }) {
   try {
     const supabase = createServerComponentClient<Database>({ cookies });
-    
+
     const { error } = await supabase.from("notifications").insert({
       user_id: userId,
       type,
@@ -30,12 +30,12 @@ export async function createNotification({
       related_id: relatedId || null,
       group_id: groupId || null,
     });
-    
+
     if (error) {
       console.error("Error creating notification:", error);
       return false;
     }
-    
+
     return true;
   } catch (error) {
     console.error("Unexpected error creating notification:", error);
@@ -65,37 +65,39 @@ export async function createExpenseAddedNotifications({
 }) {
   try {
     const supabase = createServerComponentClient<Database>({ cookies });
-    
+
     // Get all group members except the creator
     const { data: groupMembers, error: membersError } = await supabase
       .from("group_members")
       .select("user_id")
       .eq("group_id", groupId)
       .neq("user_id", createdByUserId);
-    
+
     if (membersError || !groupMembers) {
       console.error("Error fetching group members:", membersError);
       return false;
     }
-    
+
     // Create a notification for each member
     const notifications = groupMembers.map((member) => ({
       user_id: member.user_id,
       type: "expense_added" as NotificationType,
-      content: `${createdByUserName} added a new expense of ${formatCurrency(expenseAmount)} for "${expenseDescription}" in ${groupName}.`,
+      content: `${createdByUserName} added a new expense of रु {formatCurrency(expenseAmount)} for "${expenseDescription}" in ${groupName}.`,
       related_id: expenseId,
       group_id: groupId,
     }));
-    
+
     if (notifications.length > 0) {
-      const { error } = await supabase.from("notifications").insert(notifications);
-      
+      const { error } = await supabase
+        .from("notifications")
+        .insert(notifications);
+
       if (error) {
         console.error("Error creating expense notifications:", error);
         return false;
       }
     }
-    
+
     return true;
   } catch (error) {
     console.error("Unexpected error creating expense notifications:", error);
@@ -122,7 +124,9 @@ export async function createSettlementRequestNotification({
   return createNotification({
     userId: toUserId,
     type: "settlement_request",
-    content: `${fromUserName} has requested a settlement of ${formatCurrency(amount)} in ${groupName}.`,
+    content: `${fromUserName} has requested a settlement of ${formatCurrency(
+      amount
+    )} in ${groupName}.`,
     groupId,
   });
 }
@@ -152,32 +156,36 @@ export async function createSettlementCompletedNotification({
   // Create notifications for both parties involved in the settlement
   // (unless they're the one who marked it as settled)
   const notifications = [];
-  
+
   if (fromUserId !== settledByUserId) {
     notifications.push({
       userId: fromUserId,
       type: "settlement_completed" as NotificationType,
-      content: `${settledByUserName} marked your payment of ${formatCurrency(amount)} as settled in ${groupName}.`,
+      content: `${settledByUserName} marked your payment of ${formatCurrency(
+        amount
+      )} as settled in ${groupName}.`,
       relatedId: settlementId,
       groupId,
     });
   }
-  
+
   if (toUserId !== settledByUserId) {
     notifications.push({
       userId: toUserId,
       type: "settlement_completed" as NotificationType,
-      content: `${settledByUserName} marked a payment of ${formatCurrency(amount)} to you as settled in ${groupName}.`,
+      content: `${settledByUserName} marked a payment of ${formatCurrency(
+        amount
+      )} to you as settled in ${groupName}.`,
       relatedId: settlementId,
       groupId,
     });
   }
-  
+
   // Create all notifications
   const results = await Promise.all(
     notifications.map((notification) => createNotification(notification))
   );
-  
+
   // Return true if all notifications were created successfully
   return results.every((result) => result);
 }
