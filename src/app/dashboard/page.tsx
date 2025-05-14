@@ -6,6 +6,7 @@ import { supabase } from "@/utils/supabase";
 import { formatCurrency } from "@/utils/currency";
 import { Toaster } from "react-hot-toast";
 import LoginSuccessHandler from "@/components/auth/LoginSuccessHandler";
+import DashboardSkeleton from "@/components/ui/DashboardSkeleton";
 import {
   Group,
   User,
@@ -481,11 +482,7 @@ export default function Dashboard() {
   };
 
   if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   return (
@@ -494,7 +491,7 @@ export default function Dashboard() {
       <Suspense fallback={null}>
         <LoginSuccessHandler />
       </Suspense>
-      
+
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">
           Welcome, {user?.name || "User"}
