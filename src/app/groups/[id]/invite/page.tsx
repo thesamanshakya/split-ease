@@ -554,7 +554,9 @@ export default function InvitePage() {
                 </div>
                 <div>
                   <div className="font-medium text-gray-800">{member.name}</div>
-                  <div className="text-sm text-gray-500">{member.email}</div>
+                  <div className="text-sm text-gray-500">
+                    {maskEmail(member.email)}
+                  </div>
                 </div>
               </div>
             ))}
