@@ -369,9 +369,10 @@ export default function GroupPage() {
           {expenses.length > 0 ? (
             <div className="space-y-3">
               {expenses.map((expense) => (
-                <div
+                <Link
                   key={expense.id}
-                  className="p-4 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors"
+                  href={`/groups/${groupId}/expenses/${expense.id}`}
+                  className="block p-4 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors"
                 >
                   <div className="flex justify-between items-start">
                     <div>
@@ -394,7 +395,7 @@ export default function GroupPage() {
                       </p>
                     </div>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           ) : (

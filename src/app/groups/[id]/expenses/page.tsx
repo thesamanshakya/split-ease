@@ -6,6 +6,7 @@ import Link from "next/link";
 import { supabase } from "@/utils/supabase";
 import { formatCurrency } from "@/utils/currency";
 import { Expense, User } from "@/types";
+import ExpensesPageSkeleton from "@/components/ui/ExpensesPageSkeleton";
 
 export default function GroupExpensesPage() {
   const router = useRouter();
@@ -162,11 +163,7 @@ export default function GroupExpensesPage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
-      </div>
-    );
+    return <ExpensesPageSkeleton />;
   }
 
   return (
@@ -279,9 +276,10 @@ export default function GroupExpensesPage() {
         {filteredExpenses.length > 0 ? (
           <div className="space-y-3">
             {filteredExpenses.map((expense) => (
-              <div
+              <Link
                 key={expense.id}
-                className="p-4 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors"
+                href={`/groups/${groupId}/expenses/${expense.id}`}
+                className="block p-4 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors"
               >
                 <div className="flex justify-between items-start">
                   <div>
@@ -320,7 +318,7 @@ export default function GroupExpensesPage() {
                     </div>
                   </div>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         ) : (
