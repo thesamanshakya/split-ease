@@ -298,28 +298,35 @@ export default function SettleUpPage() {
 
   // Calculate the optimal way to settle up
   const calculateSettlements = (balances: Balance[]): Settlement[] => {
-    // Separate out people who owe money (negative balance) and people who are owed money (positive balance)
-    const debtors = balances
-      .filter((b) => b.amount < 0)
-      .sort((a, b) => a.amount - b.amount);
-    const creditors = balances
-      .filter((b) => b.amount > 0)
-      .sort((a, b) => b.amount - a.amount);
-
+    // Create a copy of the balances to work with
+    const workingBalances = [...balances.map(b => ({...b}))];
+    
     // People with zero balance don't need to do anything
     const settlements: Settlement[] = [];
-
-    let i = 0; // Index for debtors
-    let j = 0; // Index for creditors
-
-    // While there are still debtors and creditors to process
-    while (i < debtors.length && j < creditors.length) {
-      const debtor = debtors[i];
-      const creditor = creditors[j];
-
+    
+    // Continue until all balances are approximately zero
+    while (true) {
+      // Re-separate debtors and creditors each iteration to handle changing balances
+      const debtors = workingBalances
+        .filter((b) => b.amount < -0.01) // Only include meaningful negative balances
+        .sort((a, b) => a.amount - b.amount); // Most negative first
+        
+      const creditors = workingBalances
+        .filter((b) => b.amount > 0.01) // Only include meaningful positive balances
+        .sort((a, b) => b.amount - a.amount); // Most positive first
+      
+      // If there are no more meaningful debtors or creditors, we're done
+      if (debtors.length === 0 || creditors.length === 0) {
+        break;
+      }
+      
+      // Take the largest debtor and largest creditor
+      const debtor = debtors[0];
+      const creditor = creditors[0];
+      
       // The amount to settle is the minimum of the absolute debt and the absolute credit
       const amountToSettle = Math.min(Math.abs(debtor.amount), creditor.amount);
-
+      
       if (amountToSettle > 0.01) {
         // Only include non-trivial settlements (above 1 cent)
         settlements.push({
@@ -328,22 +335,15 @@ export default function SettleUpPage() {
           amount: amountToSettle,
         });
       }
-
+      
       // Update balances
       debtor.amount += amountToSettle;
       creditor.amount -= amountToSettle;
-
-      // If the debtor's balance is now approximately zero, move to the next debtor
-      if (Math.abs(debtor.amount) < 0.01) {
-        i++;
-      }
-
-      // If the creditor's balance is now approximately zero, move to the next creditor
-      if (creditor.amount < 0.01) {
-        j++;
-      }
+      
+      // If both balances are approximately zero, we don't need to reconsider them
+      // The next iteration will filter them out if their balances are close to zero
     }
-
+    
     return settlements;
   };
 

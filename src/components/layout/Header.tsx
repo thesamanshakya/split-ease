@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { clearPWACache } from "@/utils/cacheUtils";
 import { User } from "@/types";
 import toast, { Toaster } from "react-hot-toast";
 import { Button } from "@/components/ui/button";
@@ -14,8 +15,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ChevronDown, User as UserIcon, LogOut } from "lucide-react";
+import { ChevronDown, User as UserIcon, LogOut, RefreshCw } from "lucide-react";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
+import { CacheRefreshButton } from "@/components/ui/cache-refresh-button";
 
 export default function Header() {
   const pathname = usePathname();
@@ -294,6 +296,14 @@ export default function Header() {
                   </Link>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
+                    className="cursor-pointer"
+                    onClick={() => clearPWACache()}
+                  >
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    <span>Refresh App</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
                     className="cursor-pointer text-red-600 focus:text-red-600"
                     onClick={handleSignOut}
                   >
@@ -305,6 +315,7 @@ export default function Header() {
             </>
           ) : (
             <>
+              <CacheRefreshButton variant="ghost" size="icon" showLabel={false} />
               <Link href="/auth">
                 <Button variant="outline" size="sm">
                   Log in
