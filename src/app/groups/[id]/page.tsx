@@ -307,6 +307,59 @@ export default function GroupPage() {
   return (
     <div className="max-w-4xl mx-auto">
       <Toaster position="top-center" />
+      {/* Breadcrumbs */}
+      <nav className="flex mb-4 text-sm" aria-label="Breadcrumb">
+        <ol className="flex items-center space-x-1">
+          <li>
+            <Link
+              href="/dashboard"
+              className="text-gray-500 hover:text-gray-700"
+            >
+              Dashboard
+            </Link>
+          </li>
+          <li className="flex items-center">
+            <svg
+              className="h-4 w-4 text-gray-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 5l7 7-7 7"
+              />
+            </svg>
+          </li>
+          <li>
+            <Link href="/groups" className="text-gray-500 hover:text-gray-700">
+              Groups
+            </Link>
+          </li>
+          <li className="flex items-center">
+            <svg
+              className="h-4 w-4 text-gray-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 5l7 7-7 7"
+              />
+            </svg>
+          </li>
+          <li>
+            <span className="text-gray-800 font-medium" aria-current="page">
+              {group.name}
+            </span>
+          </li>
+        </ol>
+      </nav>
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">{group.name}</h1>

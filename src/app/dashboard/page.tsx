@@ -492,6 +492,17 @@ export default function Dashboard() {
         <LoginSuccessHandler />
       </Suspense>
 
+      {/* Breadcrumbs */}
+      <nav className="flex mb-4 text-sm" aria-label="Breadcrumb">
+        <ol className="flex items-center space-x-1">
+          <li>
+            <span className="text-gray-800 font-medium" aria-current="page">
+              Dashboard
+            </span>
+          </li>
+        </ol>
+      </nav>
+
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">
           Welcome, {user?.name || "User"}
